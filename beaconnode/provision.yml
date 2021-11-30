@@ -10,7 +10,7 @@
 
   tasks:
 
-    - name: "add public ssh key to digitalocean account"
+    - name: add public ssh key to digitalocean account
       digital_ocean_sshkey:
         name: "ETH2"
         oauth_token: "{{ digital_ocean_token }}"
