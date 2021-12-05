@@ -222,29 +222,3 @@
       command: chdir=/home/beaconnode/eth ./ethd start
       become: yes
       become_user: beaconnode
-
-    - name: Add the provisioned beaconnode to the baramio-nodes.com dns records
-      uri:
-        url: https://api.cloudflare.com/client/v4/zones/0a78db01eebf2f760f95ee7b4025604a/dns_records
-        method: POST
-        body_format: json
-        status_code: [ 200, 201 ]
-        return_content: true
-        headers:
-          Content-Type: application/json
-          X-Auth-Email: "joseph@baramio.com"
-#          Authorization: Bearer <<cloudflare token>>
-          Authorization: !vault |
-            $ANSIBLE_VAULT;1.1;AES256
-            62656430613638663864636131666234303432653137396237633033643462363935623162306438
-            3962666238303333323036323038623635303936333663350a353530343836316334646463383963
-            33623765353763633264616239326134656631386236326232663632373930623437383037616531
-            3935383763363765310a666339326435633738643034343037356536663438613334353534313837
-            36353864633534363065666364376266313635373764623631386532663530313431393038646639
-            3861633931623836356138353163663238653337613265633463
-        body:
-          type: "A"
-          name: "{{ cc_host }}"
-          content: ""
-          ttl: 1
-          proxied: true

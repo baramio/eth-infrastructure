@@ -41,9 +41,100 @@
         state: present
       with_items: "{{ droplet_result.results }}"
 
-    - name: "Create a Floating IP assigned to the created Droplet"
+    - name: Check if the hostname exists in the DNS records
+      uri:
+        url: "https://api.cloudflare.com/client/v4/zones/0a78db01eebf2f760f95ee7b4025604a/dns_records?type=A&name={{ cc_host }}.baramio-nodes.com"
+        method: GET
+        status_code: 200
+        return_content: true
+        headers:
+          Content-Type: application/json
+          # Authorization: Bearer <<cloudflare token>>
+          Authorization: !vault |
+            $ANSIBLE_VAULT;1.1;AES256
+            62656430613638663864636131666234303432653137396237633033643462363935623162306438
+            3962666238303333323036323038623635303936333663350a353530343836316334646463383963
+            33623765353763633264616239326134656631386236326232663632373930623437383037616531
+            3935383763363765310a666339326435633738643034343037356536663438613334353534313837
+            36353864633534363065666364376266313635373764623631386532663530313431393038646639
+            3861633931623836356138353163663238653337613265633463
+      register: dns_check_response
+
+    - name: spot check if the Cloudflare response is good
+      ansible.builtin.debug:
+        msg: "response from CF {{ (dns_check_response.content|from_json).result }}"
+
+    - name: assign existing ip in the dns record to param floating_ip
+      ansible.builtin.set_fact:
+        floating_ip: "{{ (dns_check_response.content|from_json).result[0].content }}"
+      when: (dns_check_response.content|from_json).result[0].content is defined
+
+    - name: if there are no DNS record available, create a new floating IP
       community.digitalocean.digital_ocean_floating_ip:
         state: present
+        oauth_token: "{{ digital_ocean_token }}"
+        region: "{{ droplet_region }}"
+        project: BARAMIO
+      when: (dns_check_response.content|from_json).result[0].content is undefined
+
+    - name: if there are no DNS record available, and after the new floating IP is generated, get the floating IP address
+      uri:
+        url: "https://api.digitalocean.com/v2/floating_ips?page=1&per_page=20"
+        method: GET
+        status_code: [ 200 ]
+        return_content: true
+        headers:
+          Content-Type: application/json
+          # Authorization: Bearer <<cloudflare token>>
+          Authorization: "Bearer {{ digital_ocean_token }}"
+      when: (dns_check_response.content|from_json).result[0].content is undefined
+      register: do_fi_response
+
+    - name: spot check if the DO response is good
+      ansible.builtin.debug:
+        msg: "response from DO {{ (do_fi_response.content|from_json).floating_ips | selectattr('droplet', 'equalto', None) | list | first }}"
+      when: (dns_check_response.content|from_json).result[0].content is undefined
+
+    - name: assign new floating ip to param floating_ip
+      ansible.builtin.set_fact:
+        floating_ip: "{{ ((do_fi_response.content|from_json).floating_ips | selectattr('droplet', 'equalto', None) | list | first).ip }}"
+      when: (dns_check_response.content|from_json).result[0].content is undefined
+
+    - name: Add the new floating_ip to the baramio-nodes.com dns records
+      uri:
+        url: https://api.cloudflare.com/client/v4/zones/0a78db01eebf2f760f95ee7b4025604a/dns_records
+        method: POST
+        body_format: json
+        status_code: [ 200, 201 ]
+        return_content: true
+        headers:
+          Content-Type: application/json
+          X-Auth-Email: "joseph@baramio.com"
+          # Authorization: Bearer <<cloudflare token>>
+          Authorization: !vault |
+            $ANSIBLE_VAULT;1.1;AES256
+            62656430613638663864636131666234303432653137396237633033643462363935623162306438
+            3962666238303333323036323038623635303936333663350a353530343836316334646463383963
+            33623765353763633264616239326134656631386236326232663632373930623437383037616531
+            3935383763363765310a666339326435633738643034343037356536663438613334353534313837
+            36353864633534363065666364376266313635373764623631386532663530313431393038646639
+            3861633931623836356138353163663238653337613265633463
+        body:
+          type: "A"
+          name: "{{ cc_host }}"
+          content: "{{ floating_ip }}"
+          ttl: 1
+          proxied: true
+      when: (dns_check_response.content|from_json).result[0].content is undefined
+
+    - name: spot check if the floating ip parameter is correct
+      ansible.builtin.debug:
+        msg: "floating ip = {{ floating_ip }}"
+
+    - name: "Create a Floating IP assigned to the created Droplet"
+      community.digitalocean.digital_ocean_floating_ip:
+        state: attached
+        ip: "{{ floating_ip }}"
         droplet_id: "{{ item.data.droplet.id }}"
         oauth_token: "{{ digital_ocean_token }}"
       with_items: "{{ droplet_result.results }}"
