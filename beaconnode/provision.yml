@@ -131,7 +131,7 @@
       ansible.builtin.debug:
         msg: "floating ip = {{ floating_ip }}"
 
-    - name: "Create a Floating IP assigned to the created Droplet"
+    - name: Attach the floating IP to the created Droplet
       community.digitalocean.digital_ocean_floating_ip:
         state: attached
         ip: "{{ floating_ip }}"
