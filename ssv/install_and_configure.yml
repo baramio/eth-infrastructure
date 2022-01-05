@@ -1,0 +1,142 @@
+---
+- hosts: all
+  become: yes
+  vars:
+    docker_compose_version: "1.27.4"
+  tasks:
+
+    - name: Upgrade all apt packages
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install dependencies
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+        - gnupg-agent
+
+    - name: Add an apt signing key for Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add apt repository for stable version
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+
+    - name: Allow 'ssv' user to have passwordless sudo
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%ssv'
+        line: '%ssv ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+
+    - name: Add sudoers users to docker group
+      user:
+        name=ssv
+        groups=docker
+        append=yes
+        state=present
+        createhome=yes
+
+    - name: Download docker-compose {{ docker_compose_version }}
+      get_url:
+        url : https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-Linux-x86_64
+        dest: ~/docker-compose
+        mode: '+x'
+
+    - name: Check docker-compose exists
+      stat: path=~/docker-compose
+      register: docker_compose
+
+    - name: Move docker-compose to /usr/local/bin/docker-compose
+      command: mv ~/docker-compose /usr/local/bin/docker-compose
+      when: docker_compose.stat.exists
+
+    - name: download sample config.yaml from blox
+      get_url: url=https://raw.githubusercontent.com/bloxapp/ssv/main/config/config/example.yaml dest=/home/ssv/config.yml
+      become: yes
+      become_user: ssv
+
+    - name: configure config.yml file - beaconnode address
+      replace:
+        path: /home/ssv/config.yml
+        regexp: 'BeaconNodeAddr: example.url'
+        replace: ""
+      become: yes
+      become_user: ssv
+
+    - name: configure config.yml file - execution client address
+      replace:
+        path: /home/ssv/config.yml
+        regexp: 'ETH1Addr: example.url'
+        replace:
+      become: yes
+      become_user: ssv
+
+    - name: configure config.yml file - registry contract address
+      replace:
+        path: /home/ssv/config.yml
+        regexp: 'RegistryContractAddr: example.address'
+        replace: "RegistryContractAddr: 0x687fb596F3892904F879118e2113e1EEe8746C2E"
+      become: yes
+      become_user: ssv
+
+    - name: configure config.yml file - operator private key
+      replace:
+        path: /home/ssv/config.yml
+        regexp: 'OperatorPrivateKey:'
+        replace: 'OperatorPrivateKey: {{ privKey }}'
+      become: yes
+      become_user: ssv
+
+    - name: configure config.yml file - add MetricsAPIPort
+      replace:
+        path: /home/ssv/config.yml
+        regexp: 'DOMAIN=example.com'
+        replace: "DOMAIN=baramio-nodes.com"
+      become: yes
+      become_user: ssv
+
+    - name: switch off the built in time synchronization. Ignore result if already turned off
+      shell: timedatectl set-ntp no
+      ignore_errors: yes
+
+    - name: install ntp
+      apt:
+        name: "ntp"
+        state: present
+        update_cache: yes
+
+    - name: Make sure NTP is started up
+      service:
+        name: ntp
+        state: started
+        enabled: yes
+
+    - name: start ssv node
+      command:
+      become: yes
+      become_user: ssv
+
