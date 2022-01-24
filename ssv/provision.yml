@@ -41,7 +41,7 @@
         state: present
       with_items: "{{ droplet_result.results }}"
 
-    - name: assign new floating ip to param floating_ip
+    - name: find the public ip address of the provisioned droplet
       ansible.builtin.set_fact:
         public_ip: "{{ (item.data.droplet.networks.v4 | selectattr('type', 'equalto', 'public') | list | first).ip_address }}"
       with_items: "{{ droplet_result.results }}"

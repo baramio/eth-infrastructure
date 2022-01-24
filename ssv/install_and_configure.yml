@@ -154,12 +154,32 @@
         state: started
         enabled: yes
 
-    - name: start ssv node
-      command: docker run -d --restart unless-stopped --name=ssv_node -e CONFIG_PATH=./config.yaml -p 13000:13000 -p 12000:12000/udp -v /home/ssv/config.yaml:/config.yaml -v /home/ssv:/data --log-opt max-size=500m --log-opt max-file=10 -it 'bloxstaking/ssv-node:latest' make BUILD_PATH=/go/bin/ssvnode start-node
+    - name: copy docker-compose file to remote
+      copy:
+        src: docker-compose.yaml
+        dest: /home/ssv/docker-compose.yaml
+      become: yes
+      become_user: ssv
+
+    - name: workaround for /etc/resolv.conf which prevented docker container networking - remove /etc/resolv.conf symlink
+      command: rm /etc/resolv.conf
+
+    - name: workaround for /etc/resolv.conf - create symlink to /run/systemd/resolve/resolv.conf
+      command: ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+
+    - name: start ssv node with docker-compose
+      command: docker-compose up -d
       become: yes
       become_user: ssv
       args:
-        chdir: /home/ssv/
+        chdir: /home/ssv
+
+#    - name: start ssv node
+#      command: docker run -d --restart unless-stopped --name=ssv_node -e CONFIG_PATH=./config.yaml -p 13000:13000 -p 12000:12000/udp -v /home/ssv/config.yaml:/config.yaml -v /home/ssv:/data --log-opt max-size=500m --log-opt max-file=10 -it 'bloxstaking/ssv-node:latest' make BUILD_PATH=/go/bin/ssvnode start-node
+#      become: yes
+#      become_user: ssv
+#      args:
+#        chdir: /home/ssv/
 
     - name: spot check if pk looks good
       ansible.builtin.debug:
