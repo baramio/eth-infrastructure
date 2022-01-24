@@ -74,48 +74,67 @@
       command: mv ~/docker-compose /usr/local/bin/docker-compose
       when: docker_compose.stat.exists
 
+    - name: generate operator keys
+      command: docker run --rm -it 'bloxstaking/ssv-node:latest' /go/bin/ssvnode generate-operator-keys
+      register: keys
+
+    - name: get pk
+      set_fact:
+        pk: "{{ keys.stdout | regex_findall('\"pk\": \"(.*)\"') | first }}"
+
+    - name: get sk
+      set_fact:
+        sk: "{{ keys.stdout | regex_findall('\"sk\": \"(.*)\"') | first }}"
+
+    - name: save keys
+        copy:
+          dest: /home/ssv/keys.txt
+          content: |
+            pk: {{ pk }}
+            sk: {{ sk }}
+
     - name: download sample config.yaml from blox
-      get_url: url=https://raw.githubusercontent.com/bloxapp/ssv/main/config/config/example.yaml dest=/home/ssv/config.yml
+      get_url: url=https://raw.githubusercontent.com/bloxapp/ssv/main/config/config.example.yaml dest=/home/ssv/config.yaml
       become: yes
       become_user: ssv
 
-    - name: configure config.yml file - beaconnode address
+    - name: configure config.yaml file - beaconnode address
       replace:
-        path: /home/ssv/config.yml
+        path: /home/ssv/config.yaml
         regexp: 'BeaconNodeAddr: example.url'
-        replace: ""
+        replace: "BeaconNodeAddr: {{ cc_host }}"
       become: yes
       become_user: ssv
 
-    - name: configure config.yml file - execution client address
+    - name: configure config.yaml file - execution client address
       replace:
-        path: /home/ssv/config.yml
+        path: /home/ssv/config.yaml
         regexp: 'ETH1Addr: example.url'
-        replace:
+        replace: "ETH1Addr: {{ ec_host }}"
       become: yes
       become_user: ssv
 
-    - name: configure config.yml file - registry contract address
+    - name: configure config.yaml file - registry contract address
       replace:
-        path: /home/ssv/config.yml
+        path: /home/ssv/config.yaml
         regexp: 'RegistryContractAddr: example.address'
         replace: "RegistryContractAddr: 0x687fb596F3892904F879118e2113e1EEe8746C2E"
       become: yes
       become_user: ssv
 
-    - name: configure config.yml file - operator private key
+    - name: configure config.yaml file - operator private key
       replace:
-        path: /home/ssv/config.yml
+        path: /home/ssv/config.yaml
         regexp: 'OperatorPrivateKey:'
-        replace: 'OperatorPrivateKey: {{ privKey }}'
+        replace: 'OperatorPrivateKey: {{ sk }}'
       become: yes
       become_user: ssv
 
     - name: configure config.yml file - add MetricsAPIPort
-      replace:
+      lineinfile:
         path: /home/ssv/config.yml
-        regexp: 'DOMAIN=example.com'
-        replace: "DOMAIN=baramio-nodes.com"
+        line: "MetricsAPIPort: 15000"
+        insertbefore: BOF
       become: yes
       become_user: ssv
 
@@ -136,7 +155,16 @@
         enabled: yes
 
     - name: start ssv node
-      command:
+      command: docker run -d --restart unless-stopped --name=ssv_node -e CONFIG_PATH=./config.yaml -p 13000:13000 -p 12000:12000/udp -v /home/ssv/config.yaml:/config.yaml -v /home/ssv:/data --log-opt max-size=500m --log-opt max-file=10 -it 'bloxstaking/ssv-node:latest' make BUILD_PATH=/go/bin/ssvnode start-node
       become: yes
       become_user: ssv
+      args:
+        chdir: /home/ssv/
 
+    - name: spot check if pk looks good
+      ansible.builtin.debug:
+        msg: "{{ pk }}"
+
+    - name: spot check if sk looks good
+      ansible.builtin.debug:
+        msg: "{{ sk }}"

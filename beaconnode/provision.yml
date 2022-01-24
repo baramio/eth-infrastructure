@@ -139,10 +139,15 @@
         oauth_token: "{{ digital_ocean_token }}"
       with_items: "{{ droplet_result.results }}"
 
+    - name: assign new floating ip to param floating_ip
+      ansible.builtin.set_fact:
+        public_ip: "{{ (item.data.droplet.networks.v4 | selectattr('type', 'equalto', 'public') | list | first).ip_address }}"
+      with_items: "{{ droplet_result.results }}"
+
     - name: save ip and hostname to local hosts file /etc/hosts
       become: yes
       lineinfile:
         path: /etc/hosts
         regexp: '.*{{ item.data.droplet.name }}$'
-        line: "{{ item.data.droplet.networks.v4[0].ip_address }}  {{ item.data.droplet.name }}"
+        line: "{{ public_ip }}  {{ item.data.droplet.name }}"
       with_items: "{{ droplet_result.results }}"
