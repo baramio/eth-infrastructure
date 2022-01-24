@@ -1,0 +1,28 @@
+version: '3.3'
+services:
+  ssv-node:
+    restart: unless-stopped
+    environment:
+        - CONFIG_PATH=./config.yaml
+    command: 'make BUILD_PATH=/go/bin/ssvnode start-node'
+    ports:
+        - '13000:13000'
+        - '12000:12000/udp'
+    volumes:
+        - '/home/ssv/config.yaml:/config.yaml'
+        - '/home/ssv:/data'
+    container_name: ssv_node
+    image: 'bloxstaking/ssv-node:latest'
+    networks:
+      - ssv-net
+    logging:
+      options:
+        max-size: "500m"
+        max-file: "10"
+networks:
+  ssv-net:
+    external: false
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv4: "true"
+    name: ssv-net
