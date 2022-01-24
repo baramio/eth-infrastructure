@@ -132,7 +132,7 @@
 
     - name: configure config.yml file - add MetricsAPIPort
       lineinfile:
-        path: /home/ssv/config.yml
+        path: /home/ssv/config.yaml
         line: "MetricsAPIPort: 15000"
         insertbefore: BOF
       become: yes
