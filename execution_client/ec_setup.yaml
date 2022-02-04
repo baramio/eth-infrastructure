@@ -1,0 +1,31 @@
+#cloud-config
+groups:
+  - ubuntu: [root,sys]
+  - docker
+
+# Add users to the system. Users are added after groups are added.
+users:
+  - default
+  - name: ec
+    gecos: ec
+    shell: /bin/bash
+    primary_group: docker
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    lock_passwd: false
+    ssh_authorized_keys:
+      - # Paste your created SSH key here
+
+runcmd:
+  - sudo apt update && sudo apt -y dist-upgrade
+  - sudo snap remove --purge docker
+  - sudo apt install -y docker-compose
+  - sudo systemctl enable --now docker
+  - git clone https://github.com/eth-educators/eth-docker.git /home/ec
+  - cp /home/ec/eth-docker/default.env /home/ec/eth-docker/.env
+  - sed -i 's/COMPOSE_FILE=teku-base.yml:geth.yml/COMPOSE_FILE=geth.yml/g' /home/ec/eth-docker/.env
+  - sed -i 's/EC_NETWORK=goerli/EC_NETWORK=rinkeby/g' /home/ec/eth-docker/.env
+  - sudo timedatectl set-ntp no
+  - sudo apt update && sudo apt install ntp
+  - chdir=/home/ec/eth-docker docker-compose build --pull
+  - chdir=/home/ec/eth-docker ./ethd start

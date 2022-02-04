@@ -1,2 +1,2 @@
-beaconnode/group_vars/tokens
+consensus_client/group_vars/tokens
 /ssv/group_vars/tokens
