@@ -3,6 +3,10 @@ groups:
   - ubuntu: [root,sys]
   - docker
 
+package-update: true
+package-upgrade: true
+package_reboot_if_required: true
+
 # Add users to the system. Users are added after groups are added.
 users:
   - default
@@ -17,9 +21,6 @@ users:
       - ${ssh_public_key}
 
 runcmd:
-  - sudo apt update && sudo apt -y dist-upgrade
-  - sudo apt install -y docker-compose
-  - sudo systemctl enable --now docker
   - git clone https://github.com/eth-educators/eth-docker.git
   - cp /home/ec/eth-docker/default.env /home/ec/eth-docker/.env
   - sed -i 's/COMPOSE_FILE=teku-base.yml:geth.yml/COMPOSE_FILE=geth.yml/g' /home/ec/eth-docker/.env
