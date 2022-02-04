@@ -18,14 +18,14 @@ users:
 
 runcmd:
   - sudo apt update && sudo apt -y dist-upgrade
-  - sudo snap remove --purge docker
   - sudo apt install -y docker-compose
   - sudo systemctl enable --now docker
-  - git clone https://github.com/eth-educators/eth-docker.git /home/ec
+  - git clone https://github.com/eth-educators/eth-docker.git
   - cp /home/ec/eth-docker/default.env /home/ec/eth-docker/.env
   - sed -i 's/COMPOSE_FILE=teku-base.yml:geth.yml/COMPOSE_FILE=geth.yml/g' /home/ec/eth-docker/.env
   - sed -i 's/EC_NETWORK=goerli/EC_NETWORK=rinkeby/g' /home/ec/eth-docker/.env
+  - sed -i 's/- execution/ /g' /home/ec/eth-docker/geth.yml
   - sudo timedatectl set-ntp no
-  - sudo apt update && sudo apt install ntp
+  - sudo apt update && sudo apt install ntp -y
   - chdir=/home/ec/eth-docker docker-compose build --pull
   - chdir=/home/ec/eth-docker ./ethd start
