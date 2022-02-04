@@ -9,6 +9,11 @@ terraform {
   }
 }
 
+variable "ssh_public_key" {
+  default     = 1
+  description = "ssh public key to access droplets"
+}
+
 provider "digitalocean" {}
 
 resource "digitalocean_droplet" "execution_client_1" {
@@ -16,7 +21,7 @@ resource "digitalocean_droplet" "execution_client_1" {
   name      = "rinkeby1-ec.baramio-nodes.com"
   region    = "nyc1"
   size      = "s-2vcpu-4gb"
-  user_data = file("terramino_app.yaml")
+  user_data = templatefile("ec_setup.yaml", { ssh_public_key = var.ssh_public_key})
 }
 
 resource "digitalocean_droplet" "execution_client_2" {
