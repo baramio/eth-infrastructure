@@ -101,6 +101,8 @@ resource "cloudflare_load_balancer_pool" "pool1" {
     address = "${var.network}-ws-${var.ec1_name}.baramio-nodes.com"
     enabled = true
   }
+  minimum_origins = 1
+  notification_email = "joseph@baramio.com"
 }
 
 resource "cloudflare_load_balancer_pool" "pool2" {
@@ -110,4 +112,6 @@ resource "cloudflare_load_balancer_pool" "pool2" {
     address = "${var.network}-ws-${var.ec2_name}.baramio-nodes.com"
     enabled = true
   }
+  minimum_origins = 1
+  notification_email = "joseph@baramio.com"
 }
