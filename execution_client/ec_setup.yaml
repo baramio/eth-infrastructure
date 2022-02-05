@@ -31,6 +31,7 @@ runcmd:
   - sed -i 's/EC_NETWORK=goerli/EC_NETWORK=${network}/g' /home/ec/eth-docker/.env
   - sed -i 's/DOMAIN=example.com/DOMAIN=baramio-nodes.com/g' /home/ec/eth-docker/.env
   - sed -i 's/DDNS_SUBDOMAIN=/DDNS_SUBDOMAIN=${ecws_host}/g' /home/ec/eth-docker/.env
+  - sed -i 's/DDNS_PROXY=true/DDNS_PROXY=false/g' /home/ec/eth-docker/.env
   - sed -i 's/ACME_EMAIL=user@example.com/ACME_EMAIL=${cf_email}/g' /home/ec/eth-docker/.env
   - sed -i 's/CF_EMAIL=user@example.com/CF_EMAIL=${cf_email}/g' /home/ec/eth-docker/.env
   - sed -i 's/CF_API_TOKEN=SECRETTOKEN/CF_API_TOKEN=${cf_token}/g' /home/ec/eth-docker/.env
@@ -38,8 +39,11 @@ runcmd:
   - sed -i 's/EC_WS_HOST=ecws/EC_WS_HOST=${ecws_host}/g' /home/ec/eth-docker/.env
   - yq w -i /home/ec/eth-docker/geth.yml services.eth.image tianon/true
   - yq w -i /home/ec/eth-docker/geth.yml services.eth.restart --style=double no
+  - yq w /home/ec/eth-docker/geth.yml 'service.execution.entrypoint[+]' \"--ws.origins=*\"
   - chown ec:docker -R /home/ec/eth-docker
   - sudo timedatectl set-ntp no
   - sudo apt update && sudo apt install ntp -y
   - cd /home/ec/eth-docker && docker-compose build --pull
   - cd /home/ec/eth-docker && ./ethd start
+
+    #--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=86400 > traefik-cf.yml
