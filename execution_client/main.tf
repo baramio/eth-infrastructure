@@ -21,6 +21,7 @@ resource "digitalocean_droplet" "execution_client_1" {
   name      = "rinkeby1-ec.baramio-nodes.com"
   region    = "nyc1"
   size      = "s-2vcpu-4gb"
+  tags      = "geth"
   user_data = templatefile("ec_setup.yaml", { ssh_public_key = var.ssh_public_key})
 }
 
