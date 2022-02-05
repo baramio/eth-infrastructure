@@ -28,7 +28,7 @@ runcmd:
   - mv /eth-docker/.* /home/ec/eth-docker/
   - cp /home/ec/eth-docker/default.env /home/ec/eth-docker/.env
   - sed -i 's/COMPOSE_FILE=teku-base.yml:geth.yml/COMPOSE_FILE=geth.yml/g' /home/ec/eth-docker/.env
-  - sed -i 's/EC_NETWORK=goerli/EC_NETWORK=rinkeby/g' /home/ec/eth-docker/.env
+  - sed -i 's/EC_NETWORK=goerli/EC_NETWORK=${network}/g' /home/ec/eth-docker/.env
   - yq w -i /home/ec/eth-docker/geth.yml services.eth.image tianon/true
   - yq w -i /home/ec/eth-docker/geth.yml services.eth.restart --style=double no
   - chown ec:docker -R /home/ec/eth-docker
