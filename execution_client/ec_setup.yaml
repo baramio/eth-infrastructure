@@ -21,11 +21,14 @@ runcmd:
   - sudo apt install -y docker-compose
   - sudo systemctl enable --now docker
   - git clone https://github.com/eth-educators/eth-docker.git
+  - mkdir /home/ec/eth-docker
+  - mv /eth-docker/* /home/ec/eth-docker/
   - cp /home/ec/eth-docker/default.env /home/ec/eth-docker/.env
   - sed -i 's/COMPOSE_FILE=teku-base.yml:geth.yml/COMPOSE_FILE=geth.yml/g' /home/ec/eth-docker/.env
   - sed -i 's/EC_NETWORK=goerli/EC_NETWORK=rinkeby/g' /home/ec/eth-docker/.env
-  - sed -i 's/- execution/- /g' /home/ec/eth-docker/geth.yml
+  - sed -i 's/eth:/eth:\n    image: tianon\/true\n    restart: \"no\"/g' /home/ec/eth-docker/geth.yml
+  - chown ec:docker -R /home/ec/eth-docker
   - sudo timedatectl set-ntp no
   - sudo apt update && sudo apt install ntp -y
-  - chdir=/home/ec/eth-docker docker-compose build --pull
-  - chdir=/home/ec/eth-docker ./ethd start
+  - cd /home/ec/eth-docker && docker-compose build --pull
+  - cd /home/ec/eth-docker && ./ethd start
