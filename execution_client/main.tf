@@ -5,6 +5,10 @@ terraform {
     digitalocean = {
       source  = "digitalocean/digitalocean"
       version = "~> 2.0"
+    },
+    cloudflare = {
+      source = "cloudflare/cloudflare"
+      version = "~> 3.0"
     }
   }
 }
@@ -44,6 +48,10 @@ variable "cf_zoneid" {
 }
 
 provider "digitalocean" {}
+provider "cloudflare" {
+  email   = var.cf_email
+  api_token = var.cf_token
+}
 
 resource "digitalocean_droplet" "execution_client_1" {
   image     = "ubuntu-20-04-x64"
@@ -75,4 +83,22 @@ resource "digitalocean_droplet" "execution_client_2" {
     ec_host = "${var.network}-${var.ec2_name}",
     ecws_host = "${var.network}-ws-${var.ec2_name}"
   })
+}
+
+resource "cloudflare_record" "ec1_cf" {
+  zone_id = var.cf_zoneid
+  name    = "${var.network}-ws-${var.ec1_name}"
+  value   = digitalocean_droplet.execution_client_1.ipv4_address
+  type    = "A"
+  ttl     = 1
+  proxied = true
+}
+
+resource "cloudflare_record" "ec2_cf" {
+  zone_id = var.cf_zoneid
+  name    = "${var.network}-ws-${var.ec2_name}"
+  value   = digitalocean_droplet.execution_client_2.ipv4_address
+  type    = "A"
+  ttl     = 1
+  proxied = true
 }
