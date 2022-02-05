@@ -23,12 +23,12 @@ variable "network" {
 }
 
 variable "ec1_name" {
-  default     = "1-ec.baramio-nodes.com"
+  default     = "1-ec"
   description = "name of the first node"
 }
 
 variable "ec2_name" {
-  default     = "2-ec.baramio-nodes.com"
+  default     = "2-ec"
   description = "name of the second node"
 }
 
