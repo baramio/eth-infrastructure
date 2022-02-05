@@ -20,13 +20,16 @@ runcmd:
   - sudo apt update && sudo apt -y dist-upgrade
   - sudo apt install -y docker-compose
   - sudo systemctl enable --now docker
+  - sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64
+  - sudo chmod +x /usr/local/bin/yq
   - git clone https://github.com/eth-educators/eth-docker.git
   - mkdir /home/ec/eth-docker
   - mv /eth-docker/* /home/ec/eth-docker/
   - cp /home/ec/eth-docker/default.env /home/ec/eth-docker/.env
   - sed -i 's/COMPOSE_FILE=teku-base.yml:geth.yml/COMPOSE_FILE=geth.yml/g' /home/ec/eth-docker/.env
   - sed -i 's/EC_NETWORK=goerli/EC_NETWORK=rinkeby/g' /home/ec/eth-docker/.env
-  - sed -i 's/eth:/eth:\n    image: tianon\/true\n    restart: \"no\"/g' /home/ec/eth-docker/geth.yml
+  - yq w -i /home/ec/eth-docker/geth.yml eth.image tianon/true
+  - yq w -i /home/ec/eth-docker/geth.yml eth.restart "no""
   - chown ec:docker -R /home/ec/eth-docker
   - sudo timedatectl set-ntp no
   - sudo apt update && sudo apt install ntp -y
