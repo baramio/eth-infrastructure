@@ -40,6 +40,7 @@ runcmd:
   - yq w -i /home/ec/eth-docker/geth.yml services.eth.image tianon/true
   - yq w -i /home/ec/eth-docker/geth.yml services.eth.restart --style=double no
   - yq w /home/ec/eth-docker/geth.yml 'service.execution.entrypoint[+]' \"--ws.origins=*\"
+  - yq w /home/ec/eth-docker/traefik-cf.yml 'services.traefik.command[+]' \"--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=86400\"
   - chown ec:docker -R /home/ec/eth-docker
   - sudo timedatectl set-ntp no
   - sudo apt update && sudo apt install ntp -y
