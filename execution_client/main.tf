@@ -42,6 +42,11 @@ variable "cf_token" {
   description = "cloudflare token"
 }
 
+variable "cf_lb_token" {
+  default     = "hey"
+  description = "cloudflare token for load balancing"
+}
+
 variable "cf_zoneid" {
   default     = "zone zone zone"
   description = "cloudflare zone id"
@@ -50,7 +55,7 @@ variable "cf_zoneid" {
 provider "digitalocean" {}
 provider "cloudflare" {
   email   = var.cf_email
-  api_token = var.cf_token
+  api_token = var.cf_lb_token
 }
 
 resource "digitalocean_droplet" "execution_client_1" {
