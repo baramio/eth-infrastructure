@@ -27,7 +27,7 @@ runcmd:
   - mv /eth-docker/* /home/ec/eth-docker/
   - mv /eth-docker/.* /home/ec/eth-docker/
   - cp /home/ec/eth-docker/default.env /home/ec/eth-docker/.env
-  - sed -i 's/COMPOSE_FILE=teku-base.yml:geth.yml/COMPOSE_FILE=geth.yml:traefik-cf.yml:ec-traefik.yml/g' /home/ec/eth-docker/.env
+  - sed -i 's/COMPOSE_FILE=teku-base.yml:geth.yml/COMPOSE_FILE=geth.yml:ec-traefik.yml:traefik-cf.yml/g' /home/ec/eth-docker/.env
   - sed -i 's/EC_NETWORK=goerli/EC_NETWORK=${network}/g' /home/ec/eth-docker/.env
   - sed -i 's/DOMAIN=example.com/DOMAIN=baramio-nodes.com/g' /home/ec/eth-docker/.env
   - sed -i 's/DDNS_SUBDOMAIN=/DDNS_SUBDOMAIN=${ecws_host}/g' /home/ec/eth-docker/.env
