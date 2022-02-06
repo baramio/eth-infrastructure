@@ -46,5 +46,3 @@ runcmd:
   - sudo apt update && sudo apt install ntp -y
   - cd /home/ec/eth-docker && docker-compose build --pull
   - cd /home/ec/eth-docker && ./ethd start
-
-    #--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=86400 > traefik-cf.yml
