@@ -41,6 +41,8 @@ runcmd:
   - yq w -i /home/ec/eth-docker/geth.yml services.eth.restart --style=double no
   - yq w -i /home/ec/eth-docker/geth.yml 'services.execution.entrypoint[+]' ws.origins=*
   - sed -i 's/ws.origins/--ws.origins/g' /home/ec/eth-docker/geth.yml
+  - yq w -i /home/ec/eth-docker/geth.yml 'services.execution.entrypoint[+]' ws.addr=0.0.0.0
+  - sed -i 's/ws.origins/--ws.addr/g' /home/ec/eth-docker/geth.yml
   - yq w -i /home/ec/eth-docker/traefik-cf.yml 'services.traefik.command[+]' certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=86400
   - sed -i 's/certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck/--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck/g' /home/ec/eth-docker/traefik-cf.yml
   - chown ec:docker -R /home/ec/eth-docker
