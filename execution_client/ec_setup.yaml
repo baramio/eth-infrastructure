@@ -18,7 +18,6 @@ users:
 
 write_files:
   - path: /home/cert.json
-    permissions: "0644"
     content: |
       {
           "AccountTag"   : "${account}",
@@ -26,7 +25,6 @@ write_files:
           "TunnelName"   : "${tunnel_name}",
           "TunnelSecret" : "${secret}"
       }
-    owner: ec:docker
   - path: /home/config.yml
     content: |
       tunnel: ${tunnel_id}
@@ -38,9 +36,7 @@ write_files:
         - hostname: "*ws*.baramio-nodes.com"
           service: wss://geth:8546
         - service: http_status:404
-    permissions: "0644"
-    owner: ec:docker
-  - path: /tmp/docker-compose.yaml
+  - path: /home/docker-compose.yaml
     content: |
       version: "3.4"
       x-logging: &logging
@@ -103,7 +99,7 @@ write_files:
           container_name: 'cloudflared' # name obtained from environment variable
           image: 'cloudflare/cloudflared:2022.2.0' # version obtained from environment variable
           volumes:
-            - '/home/ec/.cloudflared/:/etc/cloudflared/'
+            - '/home/ec/execution_client/cloudflared/:/etc/cloudflared/'
           command: 'tunnel --config /etc/cloudflared/config.yml run'
           user: ec
           restart: 'on-failure'
@@ -118,8 +114,6 @@ write_files:
           driver: bridge
           driver_opts:
             com.docker.network.enable_ipv4: "true"
-    permissions: "0644"
-    owner: ec:docker
 
 runcmd:
   - sudo apt update && sudo apt -y dist-upgrade
@@ -127,10 +121,10 @@ runcmd:
   - sudo systemctl enable --now docker
   - sudo timedatectl set-ntp no
   - sudo apt update && sudo apt install ntp -y
-  - mkdir /home/ec/.cloudflared
-  - mv /home/cert.json /home/ec/.cloudflared/cert.json
-  - mv /home/config.yml /home/ec/.cloudflared/config.yml
   - mkdir /home/ec/execution_client
+  - mkdir /home/ec/execution_client/cloudflared
+  - mv /home/cert.json /home/ec/execution_client/cloudflared/cert.json
+  - mv /home/config.yml /home/ec/execution_client/cloudflared/config.yml
   - mv /home/docker-compose.yaml /home/ec/execution_client/docker-compose.yaml
   - chown ec:docker -R /home/ec
   - cd /home/ec/execution_client && docker-compose up -d
