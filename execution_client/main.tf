@@ -10,6 +10,14 @@ terraform {
       source = "cloudflare/cloudflare"
       version = "~> 3.0"
     }
+    random = {
+      source = "hashicorp/random"
+      version = ">= 0.13"
+    }
+    template = {
+      source = "hashicorp/template"
+      version = ">= 0.13"
+    }
   }
 }
 
@@ -52,11 +60,17 @@ variable "cf_zoneid" {
   description = "cloudflare zone id"
 }
 
+variable "cf_acctid" {
+  default     = "acct id"
+  description = "cloudflare account id"
+}
+
 provider "digitalocean" {}
 provider "cloudflare" {
   email   = var.cf_email
   api_token = var.cf_lb_token
 }
+provider "random" {}
 
 resource "digitalocean_droplet" "execution_client_1" {
   image     = "ubuntu-20-04-x64"
@@ -70,7 +84,11 @@ resource "digitalocean_droplet" "execution_client_1" {
     cf_email = var.cf_email,
     cf_token = var.cf_token,
     ec_host = "${var.network}-${var.ec1_name}",
-    ecws_host = "${var.network}-ws-${var.ec1_name}"
+    ecws_host = "${var.network}-ws-${var.ec1_name}",
+    account     = var.cf_acctid,
+    tunnel_id   = cloudflare_argo_tunnel.auto_tunnel.id,
+    tunnel_name = cloudflare_argo_tunnel.auto_tunnel.name,
+    secret      = random_id.tunnel_secret.b64_std
   })
 }
 

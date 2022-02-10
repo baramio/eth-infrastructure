@@ -1,0 +1,76 @@
+version: "3.4"
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+
+services:
+  geth:
+    restart: unless-stopped
+    stop_grace_period: 3m
+    image: ethereum/client-go:stable
+    user: ec
+    container_name: geth
+    volumes:
+      - geth-eth1-data:/var/lib/goethereum
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 30303:30303/tcp
+      - 30303:30303/udp
+    expose:
+      - 8545/tcp
+      - 8546/tcp
+      - 6060/tcp
+    networks:
+      - eth1
+    <<: *logging
+    entrypoint:
+      - geth
+      - --http
+      - --http.addr
+      - 0.0.0.0
+      - --http.vhosts=*
+      - --http.corsdomain=*
+      - --http.api
+      - web3,eth,net
+      - --datadir
+      - /var/lib/goethereum
+      - --port
+      - 30303
+      - --http.port
+      - 8545
+      - --ws
+      - --ws.addr
+      - 0.0.0.0
+      - --ws.origins=*
+      - --ws.port
+      - 8546
+      - --ws.api
+      - web3,eth,net
+      - --${EC_NETWORK}
+      - --metrics
+      - --metrics.expensive
+      - --pprof
+      - --pprof.addr
+      - 0.0.0.0
+  cloudflared:
+    container_name: '${CLOUDFLARED_NAME}' # name obtained from environment variable
+    image: 'cloudflare/cloudflared:${CLOUDFLARED_VERSION}' # version obtained from environment variable
+    volumes:
+      - '${PWD}/cloudflared/:/etc/cloudflared/'
+    command: 'tunnel --config /etc/cloudflared/config.yml run'
+    user: ec
+    restart: 'on-failure'
+    networks:
+      - eth1
+volumes:
+  geth-eth1-data:
+networks:
+  eth1:
+    name: eth1
+    external: false
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv4: "true"

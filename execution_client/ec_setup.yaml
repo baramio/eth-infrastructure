@@ -16,37 +16,149 @@ users:
     ssh_authorized_keys:
       - ${ssh_public_key}
 
+write_files:
+  - path: /tmp/cert.json
+    permissions: "0644"
+    content: |
+      {
+          "AccountTag"   : "${account}",
+          "TunnelID"     : "${tunnel_id}",
+          "TunnelName"   : "${tunnel_name}",
+          "TunnelSecret" : "${secret}"
+      }
+    owner: ec:docker
+  - path: /tmp/config.yml
+    content: |
+      tunnel: ${tunnel_id}
+      credentials-file: /etc/cloudflared/cert.json
+      logfile: /var/log/cloudflared.log
+      loglevel: info
+      
+      ingress:
+        - hostname: "*ws*.baramio-nodes.com"
+          service: wss://geth:8546
+        - service: http_status:404
+    permissions: "0644"
+    owner: ec:docker
+  - path: /tmp/docker-compose.yaml
+      content: |
+        version: "3.4"
+        x-logging: &logging
+          logging:
+            driver: json-file
+            options:
+              max-size: 10m
+              max-file: "3"
+        
+        services:
+          geth:
+            restart: unless-stopped
+            stop_grace_period: 3m
+            image: ethereum/client-go:stable
+            user: ec
+            container_name: geth
+            volumes:
+              - geth-eth1-data:/var/lib/goethereum
+              - /etc/localtime:/etc/localtime:ro
+            ports:
+              - 30303:30303/tcp
+              - 30303:30303/udp
+            expose:
+              - 8545/tcp
+              - 8546/tcp
+              - 6060/tcp
+            networks:
+              - eth1
+            <<: *logging
+            entrypoint:
+              - geth
+              - --http
+              - --http.addr
+              - 0.0.0.0
+              - --http.vhosts=*
+              - --http.corsdomain=*
+              - --http.api
+              - web3,eth,net
+              - --datadir
+              - /var/lib/goethereum
+              - --port
+              - "30303"
+              - --http.port
+              - "8545"
+              - --ws
+              - --ws.addr
+              - 0.0.0.0
+              - --ws.origins=*
+              - --ws.port
+              - "8546"
+              - --ws.api
+              - web3,eth,net
+              - --${EC_NETWORK}
+              - --metrics
+              - --metrics.expensive
+              - --pprof
+              - --pprof.addr
+              - 0.0.0.0
+          cloudflared:
+            container_name: 'cloudflared' # name obtained from environment variable
+            image: 'cloudflare/cloudflared:2022.2.0' # version obtained from environment variable
+            volumes:
+              - '${PWD}/cloudflared/:/etc/cloudflared/'
+            command: 'tunnel --config /etc/cloudflared/config.yml run'
+            user: ec
+            restart: 'on-failure'
+            networks:
+              - eth1
+        volumes:
+          geth-eth1-data:
+        networks:
+          eth1:
+            name: eth_network
+            external: false
+            driver: bridge
+            driver_opts:
+              com.docker.network.enable_ipv4: "true"
+      permissions: "0644"
+      owner: ec:docker
+
 runcmd:
   - sudo apt update && sudo apt -y dist-upgrade
   - sudo apt install -y docker-compose
   - sudo systemctl enable --now docker
-  - sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64
-  - sudo chmod +x /usr/local/bin/yq
-  - git clone https://github.com/eth-educators/eth-docker.git
-  - mkdir /home/ec/eth-docker
-  - mv /eth-docker/* /home/ec/eth-docker/
-  - mv /eth-docker/.* /home/ec/eth-docker/
-  - cp /home/ec/eth-docker/default.env /home/ec/eth-docker/.env
-  - sed -i 's/COMPOSE_FILE=teku-base.yml:geth.yml/COMPOSE_FILE=geth.yml:ec-traefik.yml:traefik-cf.yml/g' /home/ec/eth-docker/.env
-  - sed -i 's/EC_NETWORK=goerli/EC_NETWORK=${network}/g' /home/ec/eth-docker/.env
-  - sed -i 's/DOMAIN=example.com/DOMAIN=baramio-nodes.com/g' /home/ec/eth-docker/.env
-  - sed -i 's/DDNS_SUBDOMAIN=/DDNS_SUBDOMAIN=${ecws_host}/g' /home/ec/eth-docker/.env
-  - sed -i 's/DDNS_PROXY=true/DDNS_PROXY=false/g' /home/ec/eth-docker/.env
-  - sed -i 's/ACME_EMAIL=user@example.com/ACME_EMAIL=${cf_email}/g' /home/ec/eth-docker/.env
-  - sed -i 's/CF_EMAIL=user@example.com/CF_EMAIL=${cf_email}/g' /home/ec/eth-docker/.env
-  - sed -i 's/CF_API_TOKEN=SECRETTOKEN/CF_API_TOKEN=${cf_token}/g' /home/ec/eth-docker/.env
-  - sed -i 's/EC_HOST=ec/EC_HOST=${ec_host}/g' /home/ec/eth-docker/.env
-  - sed -i 's/EC_WS_HOST=ecws/EC_WS_HOST=${ecws_host}/g' /home/ec/eth-docker/.env
-  - yq w -i /home/ec/eth-docker/geth.yml services.eth.image tianon/true
-  - yq w -i /home/ec/eth-docker/geth.yml services.eth.restart --style=double no
-  - yq w -i /home/ec/eth-docker/geth.yml 'services.execution.entrypoint[+]' ws.origins=*
-  - sed -i 's/ws.origins/--ws.origins/g' /home/ec/eth-docker/geth.yml
-  - yq w -i /home/ec/eth-docker/traefik-cf.yml 'services.traefik.command[+]' certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=86400
-  - sed -i 's/certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck/--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck/g' /home/ec/eth-docker/traefik-cf.yml
-  - chown ec:docker -R /home/ec/eth-docker
   - sudo timedatectl set-ntp no
   - sudo apt update && sudo apt install ntp -y
-  - cd /home/ec/eth-docker && docker-compose build --pull
-  - cd /home/ec/eth-docker && ./ethd start
+  - mkdir /home/ec/.cloudflared
+  - mv /tmp/cert.json /home/ec/.cloudflared/cert.json
+  - mv /tmp/config.yml /home/ec/.cloudflared/config.yml
+  - mkdir /home/ec/execution_client
+  - mv /tmp/docker-compose.yaml /home/ec/execution_client/docker-compose.yaml
+#  - sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64
+#  - sudo chmod +x /usr/local/bin/yq
+#  - git clone https://github.com/eth-educators/eth-docker.git
+#  - mkdir /home/ec/eth-docker
+#  - mv /eth-docker/* /home/ec/eth-docker/
+#  - mv /eth-docker/.* /home/ec/eth-docker/
+#  - cp /home/ec/eth-docker/default.env /home/ec/eth-docker/.env
+#  - sed -i 's/COMPOSE_FILE=teku-base.yml:geth.yml/COMPOSE_FILE=geth.yml:ec-traefik.yml:traefik-cf.yml/g' /home/ec/eth-docker/.env
+#  - sed -i 's/EC_NETWORK=goerli/EC_NETWORK=${network}/g' /home/ec/eth-docker/.env
+#  - sed -i 's/DOMAIN=example.com/DOMAIN=baramio-nodes.com/g' /home/ec/eth-docker/.env
+#  - sed -i 's/DDNS_SUBDOMAIN=/DDNS_SUBDOMAIN=${ecws_host}/g' /home/ec/eth-docker/.env
+#  - sed -i 's/DDNS_PROXY=true/DDNS_PROXY=false/g' /home/ec/eth-docker/.env
+#  - sed -i 's/ACME_EMAIL=user@example.com/ACME_EMAIL=${cf_email}/g' /home/ec/eth-docker/.env
+#  - sed -i 's/CF_EMAIL=user@example.com/CF_EMAIL=${cf_email}/g' /home/ec/eth-docker/.env
+#  - sed -i 's/CF_API_TOKEN=SECRETTOKEN/CF_API_TOKEN=${cf_token}/g' /home/ec/eth-docker/.env
+#  - sed -i 's/EC_HOST=ec/EC_HOST=${ec_host}/g' /home/ec/eth-docker/.env
+#  - sed -i 's/EC_WS_HOST=ecws/EC_WS_HOST=${ecws_host}/g' /home/ec/eth-docker/.env
+#  - yq w -i /home/ec/eth-docker/geth.yml services.eth.image tianon/true
+#  - yq w -i /home/ec/eth-docker/geth.yml services.eth.restart --style=double no
+#  - yq w -i /home/ec/eth-docker/geth.yml 'services.execution.entrypoint[+]' ws.origins=*
+#  - sed -i 's/ws.origins/--ws.origins/g' /home/ec/eth-docker/geth.yml
+#  - yq w -i /home/ec/eth-docker/traefik-cf.yml 'services.traefik.command[+]' certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=86400
+#  - sed -i 's/certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck/--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck/g' /home/ec/eth-docker/traefik-cf.yml
+#  - chown ec:docker -R /home/ec/eth-docker
+#  - sudo timedatectl set-ntp no
+#  - sudo apt update && sudo apt install ntp -y
+#  - cd /home/ec/eth-docker && docker-compose build --pull
+#  - cd /home/ec/eth-docker && ./ethd start
 
 # https://stackoverflow.com/questions/58252621/traefik-http-https-ws-wss-on-same-domain-docker-swarm
