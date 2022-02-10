@@ -51,7 +51,7 @@ write_files:
           restart: unless-stopped
           stop_grace_period: 3m
           image: ethereum/client-go:stable
-          user: ec
+          user: root
           container_name: geth
           volumes:
             - geth-eth1-data:/var/lib/goethereum
@@ -101,7 +101,7 @@ write_files:
           volumes:
             - '/home/ec/execution_client/cloudflared/:/etc/cloudflared/'
           command: 'tunnel --config /etc/cloudflared/config.yml run'
-          user: ec
+          user: root
           restart: 'on-failure'
           networks:
             - eth1
