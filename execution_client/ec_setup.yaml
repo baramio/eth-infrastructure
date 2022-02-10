@@ -17,7 +17,7 @@ users:
       - ${ssh_public_key}
 
 write_files:
-  - path: /tmp/cert.json
+  - path: /home/cert.json
     permissions: "0644"
     content: |
       {
@@ -27,7 +27,7 @@ write_files:
           "TunnelSecret" : "${secret}"
       }
     owner: ec:docker
-  - path: /tmp/config.yml
+  - path: /home/config.yml
     content: |
       tunnel: ${tunnel_id}
       credentials-file: /etc/cloudflared/cert.json
@@ -128,12 +128,12 @@ runcmd:
   - sudo timedatectl set-ntp no
   - sudo apt update && sudo apt install ntp -y
   - mkdir /home/ec/.cloudflared
-  - mv /tmp/cert.json /home/ec/.cloudflared/cert.json
-  - mv /tmp/config.yml /home/ec/.cloudflared/config.yml
+  - mv /home/cert.json /home/ec/.cloudflared/cert.json
+  - mv /home/config.yml /home/ec/.cloudflared/config.yml
   - mkdir /home/ec/execution_client
-  - mv /tmp/docker-compose.yaml /home/ec/execution_client/docker-compose.yaml
+  - mv /home/docker-compose.yaml /home/ec/execution_client/docker-compose.yaml
   - chown ec:docker -R /home/ec
-  - cd /home/ec/eth-execution_client && docker-compose up -d
+  - cd /home/ec/execution_client && docker-compose up -d
 #  - sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64
 #  - sudo chmod +x /usr/local/bin/yq
 #  - git clone https://github.com/eth-educators/eth-docker.git
