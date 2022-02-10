@@ -93,7 +93,7 @@ write_files:
               - "8546"
               - --ws.api
               - web3,eth,net
-              - --${EC_NETWORK}
+              - --${network}
               - --metrics
               - --metrics.expensive
               - --pprof
