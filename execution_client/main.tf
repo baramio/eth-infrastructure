@@ -55,6 +55,11 @@ variable "cf_lb_token" {
   description = "cloudflare token for load balancing"
 }
 
+variable "cf_tunnel_token" {
+  default     = "hey"
+  description = "cloudflare token for tunneling and load balancing"
+}
+
 variable "cf_zoneid" {
   default     = "zone zone zone"
   description = "cloudflare zone id"
@@ -68,7 +73,7 @@ variable "cf_acctid" {
 provider "digitalocean" {}
 provider "cloudflare" {
   email   = var.cf_email
-  api_token = var.cf_lb_token
+  api_token = var.cf_tunnel_token
 }
 provider "random" {}
 
