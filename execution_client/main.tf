@@ -113,6 +113,15 @@ resource "digitalocean_droplet" "execution_client_1" {
 #  })
 #}
 
+# DNS settings to CNAME to tunnel target for HTTP application
+resource "cloudflare_record" "eth1-output" {
+  zone_id = var.cf_zoneid
+  name    = eth1-wss
+  value   = "${cloudflare_argo_tunnel.auto_tunnel.id}.cfargotunnel.com"
+  type    = "CNAME"
+  proxied = false
+}
+
 #resource "cloudflare_load_balancer" "loadbalancer" {
 #  zone_id          = "${var.cf_zoneid}"
 #  name             = "${var.network}-ws-ec.baramio-nodes.com"

@@ -33,7 +33,7 @@ write_files:
       loglevel: info
       
       ingress:
-        - hostname: "*ws*.baramio-nodes.com"
+        - hostname: "*.baramio-nodes.com"
           service: wss://geth:8546
         - service: http_status:404
   - path: /home/docker-compose.yaml
@@ -109,7 +109,6 @@ write_files:
         geth-eth1-data:
       networks:
         eth1:
-          name: eth_network
           external: false
           driver: bridge
           driver_opts:
@@ -128,6 +127,10 @@ runcmd:
   - mv /home/docker-compose.yaml /home/ec/execution_client/docker-compose.yaml
   - chown ec:docker -R /home/ec
   - cd /home/ec/execution_client && docker-compose up -d
+
+# https://github.com/cloudflare/argo-tunnel-examples/tree/master/terraform-zerotrust-ssh-http-gcp
+
+
 #  - sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64
 #  - sudo chmod +x /usr/local/bin/yq
 #  - git clone https://github.com/eth-educators/eth-docker.git
