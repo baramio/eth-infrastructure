@@ -103,7 +103,7 @@ write_files:
             container_name: 'cloudflared' # name obtained from environment variable
             image: 'cloudflare/cloudflared:2022.2.0' # version obtained from environment variable
             volumes:
-              - '${PWD}/cloudflared/:/etc/cloudflared/'
+              - '/home/ec/.cloudflared/:/etc/cloudflared/'
             command: 'tunnel --config /etc/cloudflared/config.yml run'
             user: ec
             restart: 'on-failure'
@@ -132,6 +132,8 @@ runcmd:
   - mv /tmp/config.yml /home/ec/.cloudflared/config.yml
   - mkdir /home/ec/execution_client
   - mv /tmp/docker-compose.yaml /home/ec/execution_client/docker-compose.yaml
+  - chown ec:docker -R /home/ec
+  - cd /home/ec/eth-execution_client && docker-compose up -d
 #  - sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64
 #  - sudo chmod +x /usr/local/bin/yq
 #  - git clone https://github.com/eth-educators/eth-docker.git
