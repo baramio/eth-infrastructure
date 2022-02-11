@@ -11,7 +11,7 @@ services:
     restart: unless-stopped
     stop_grace_period: 3m
     image: ethereum/client-go:stable
-    user: ec
+    user: root
     container_name: geth
     volumes:
       - geth-eth1-data:/var/lib/goethereum
@@ -38,30 +38,30 @@ services:
       - --datadir
       - /var/lib/goethereum
       - --port
-      - 30303
+      - "30303"
       - --http.port
-      - 8545
+      - "8545"
       - --ws
       - --ws.addr
       - 0.0.0.0
       - --ws.origins=*
       - --ws.port
-      - 8546
+      - "8546"
       - --ws.api
       - web3,eth,net
-      - --${EC_NETWORK}
+      - --${network}
       - --metrics
       - --metrics.expensive
       - --pprof
       - --pprof.addr
       - 0.0.0.0
   cloudflared:
-    container_name: '${CLOUDFLARED_NAME}' # name obtained from environment variable
-    image: 'cloudflare/cloudflared:${CLOUDFLARED_VERSION}' # version obtained from environment variable
+    container_name: 'cloudflared' # name obtained from environment variable
+    image: 'cloudflare/cloudflared:2022.2.0' # version obtained from environment variable
     volumes:
-      - '${PWD}/cloudflared/:/etc/cloudflared/'
+      - '/home/ec/execution_client/cloudflared/:/etc/cloudflared/'
     command: 'tunnel --config /etc/cloudflared/config.yml run'
-    user: ec
+    user: root
     restart: 'on-failure'
     networks:
       - eth1
@@ -69,7 +69,6 @@ volumes:
   geth-eth1-data:
 networks:
   eth1:
-    name: eth1
     external: false
     driver: bridge
     driver_opts:
