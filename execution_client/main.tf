@@ -95,7 +95,7 @@ resource "cloudflare_record" "eth1-output" {
   name    = "eth1-wss"
   value   = "${cloudflare_argo_tunnel.auto_tunnel1.id}.cfargotunnel.com"
   type    = "CNAME"
-  proxied = false
+  proxied = true
 }
 
 resource "digitalocean_droplet" "execution_client_1" {

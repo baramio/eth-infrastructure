@@ -102,11 +102,23 @@ write_files:
             - traefik.http.routers.ecws.rule=Host(`${ecws_host}.baramio-nodes.com`)
             - traefik.http.routers.ecws.tls.certresolver=letsencrypt
             - traefik.http.services.ecws.loadbalancer.server.port=8546
+        cloudflared:
+          container_name: 'cloudflared' # name obtained from environment variable
+          image: 'cloudflare/cloudflared:2022.2.0' # version obtained from environment variable
+          volumes:
+            - '/home/ec/execution_client/cloudflared/:/etc/cloudflared/'
+          command: 'tunnel --config /etc/cloudflared/config.yml run'
+          user: root
+          restart: 'on-failure'
+          networks:
+            - eth1
         traefik:
           image: traefik:latest
+          container_name: traefik
           restart: unless-stopped
           command:
             - --log.level=DEBUG
+            - --accesslog=true
             - --providers.docker=true
             - --providers.docker.exposedbydefault=false
             - --certificatesresolvers.letsencrypt.acme.dnschallenge=true
@@ -135,6 +147,7 @@ write_files:
             - cf-ddns
         cf-ddns:
           image: oznu/cloudflare-ddns:latest
+          container_name: cf-ddns
           restart: unless-stopped
           environment:
             - API_KEY=${cf_token}
@@ -151,7 +164,6 @@ write_files:
         certs:
       networks:
         eth1:
-          external: false
           driver: bridge
           driver_opts:
             com.docker.network.enable_ipv4: "true"
