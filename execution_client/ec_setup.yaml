@@ -30,7 +30,7 @@ write_files:
       tunnel: ${tunnel_id}
       credentials-file: /etc/cloudflared/cert.json
       logfile: /var/log/cloudflared.log
-      loglevel: debug
+      loglevel: info
       
       ingress:
         - hostname: "${network}-ec.baramio-nodes.com"

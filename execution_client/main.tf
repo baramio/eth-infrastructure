@@ -31,7 +31,7 @@ variable "network" {
 }
 
 variable "ec1_name" {
-  default     = "aequilo"
+  default     = "aeolus"
   description = "name of the first node"
 }
 
