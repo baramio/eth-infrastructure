@@ -123,12 +123,23 @@ resource "digitalocean_droplet" "execution_client_2" {
 }
 
 resource "cloudflare_load_balancer" "loadbalancer" {
-  zone_id          = "${var.cf_zoneid}"
+  zone_id          = var.cf_zoneid
   name             = "${var.network}-ec.baramio-nodes.com"
   fallback_pool_id = cloudflare_load_balancer_pool.pool2.id
   default_pool_ids = [cloudflare_load_balancer_pool.pool1.id]
   description      = "load balancer"
   proxied          = true
+}
+
+resource "cloudflare_load_balancer_monitor" "http_monitor" {
+  type = "http"
+  expected_codes = "200"
+  method = "GET"
+  timeout = 5
+  path = "/"
+  interval = 60
+  retries = 2
+  description = "http load balancer"
 }
 
 resource "cloudflare_load_balancer_pool" "pool1" {
@@ -139,6 +150,7 @@ resource "cloudflare_load_balancer_pool" "pool1" {
     enabled = true
   }
   minimum_origins = 1
+  monitor = cloudflare_load_balancer_monitor.http_monitor.id
   notification_email = "joseph@baramio.com"
 }
 
@@ -150,5 +162,6 @@ resource "cloudflare_load_balancer_pool" "pool2" {
     enabled = true
   }
   minimum_origins = 1
+  monitor = cloudflare_load_balancer_monitor.http_monitor.id
   notification_email = "joseph@baramio.com"
 }

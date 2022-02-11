@@ -35,7 +35,7 @@ write_files:
       ingress:
         - hostname: "${network}-ec.baramio-nodes.com"
           service: ws://geth:8546
-        - service: http_status:404
+        - service: http_status:200
   - path: /home/docker-compose.yaml
     content: |
       version: "3.4"
