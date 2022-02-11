@@ -30,7 +30,7 @@ write_files:
       tunnel: ${tunnel_id}
       credentials-file: /etc/cloudflared/cert.json
       logfile: /var/log/cloudflared.log
-      loglevel: info
+      loglevel: debug
       
       ingress:
         - hostname: "ec.baramio-nodes.com"
@@ -121,11 +121,15 @@ write_files:
             - --accesslog=true
             - --providers.docker=true
             - --providers.docker.exposedbydefault=false
+            - --providers.docker.network=eth1
+            - --certificatesResolvers.letsencrypt.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
             - --certificatesresolvers.letsencrypt.acme.dnschallenge=true
             - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare
             - --certificatesresolvers.letsencrypt.acme.email=${cf_email}
             - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
-            - --certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=86400
+            - --certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=180
+            - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers[0]=1.1.1.1:53
+            - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers[1]=8.8.8.8:53
             - --entrypoints.web.address=:80
             - --entrypoints.web.http.redirections.entrypoint.to=websecure
             - --entrypoints.web.http.redirections.entrypoint.scheme=https
@@ -169,6 +173,7 @@ write_files:
             com.docker.network.enable_ipv4: "true"
 
 runcmd:
+  - sudo apt remove --purge --assume-yes snapd
   - sudo apt update && sudo apt -y dist-upgrade
   - sudo apt install -y docker-compose
   - sudo systemctl enable --now docker
