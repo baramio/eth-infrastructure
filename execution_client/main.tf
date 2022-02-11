@@ -108,7 +108,7 @@ resource "digitalocean_droplet" "execution_client_1" {
 resource "digitalocean_droplet" "execution_client_2" {
   image      = "ubuntu-20-04-x64"
   name       = "${var.network}-${var.ec2_name}"
-  region     = "nyc1"
+  region     = "sfo3"
   size       = "s-4vcpu-8gb"
   tags       = ["geth"]
   monitoring = true
