@@ -77,26 +77,26 @@ provider "cloudflare" {
 }
 provider "random" {}
 
-# The random_id resource is used to generate a 35 character secret for the tunnel
-resource "random_id" "tunnel_secret1" {
-  byte_length = 35
-}
-
-# A Named Tunnel resource called zero_trust_ssh_http
-resource "cloudflare_argo_tunnel" "auto_tunnel1" {
-  account_id = var.cf_acctid
-  name       = "${var.network}-${var.ec1_name}-tunnel"
-  secret     = random_id.tunnel_secret1.b64_std
-}
-
-# DNS settings to CNAME to tunnel target for HTTP application
-resource "cloudflare_record" "eth1-output" {
-  zone_id = var.cf_zoneid
-  name    = "eth1-wss"
-  value   = "${cloudflare_argo_tunnel.auto_tunnel1.id}.cfargotunnel.com"
-  type    = "CNAME"
-  proxied = false
-}
+## The random_id resource is used to generate a 35 character secret for the tunnel
+#resource "random_id" "tunnel_secret1" {
+#  byte_length = 35
+#}
+#
+## A Named Tunnel resource called zero_trust_ssh_http
+#resource "cloudflare_argo_tunnel" "auto_tunnel1" {
+#  account_id = var.cf_acctid
+#  name       = "${var.network}-${var.ec1_name}-tunnel"
+#  secret     = random_id.tunnel_secret1.b64_std
+#}
+#
+## DNS settings to CNAME to tunnel target for HTTP application
+#resource "cloudflare_record" "eth1-output" {
+#  zone_id = var.cf_zoneid
+#  name    = "eth1-wss"
+#  value   = "${cloudflare_argo_tunnel.auto_tunnel1.id}.cfargotunnel.com"
+#  type    = "CNAME"
+#  proxied = false
+#}
 
 resource "digitalocean_droplet" "execution_client_1" {
   image     = "ubuntu-20-04-x64"
