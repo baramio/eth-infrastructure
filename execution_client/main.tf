@@ -85,7 +85,7 @@ resource "cloudflare_argo_tunnel" "auto_tunnel1" {
 resource "cloudflare_argo_tunnel" "auto_tunnel2" {
   account_id = var.cf_acctid
   name       = "${var.network}-${var.ec2_name}-tunnel"
-  secret     = random_id.tunnel_secret1.b64_std
+  secret     = random_id.tunnel_secret2.b64_std
 }
 
 resource "digitalocean_droplet" "execution_client_1" {
