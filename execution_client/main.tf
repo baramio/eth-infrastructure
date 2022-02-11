@@ -111,10 +111,10 @@ resource "digitalocean_droplet" "execution_client_1" {
     cf_token = var.cf_token,
     ec_host = "${var.network}-${var.ec1_name}",
     ecws_host = "${var.network}-ws-${var.ec1_name}",
-    account     = var.cf_acctid,
-    tunnel_id   = cloudflare_argo_tunnel.auto_tunnel1.id,
-    tunnel_name = cloudflare_argo_tunnel.auto_tunnel1.name,
-    secret      = random_id.tunnel_secret1.b64_std
+#    account     = var.cf_acctid,
+#    tunnel_id   = cloudflare_argo_tunnel.auto_tunnel1.id,
+#    tunnel_name = cloudflare_argo_tunnel.auto_tunnel1.name,
+#    secret      = random_id.tunnel_secret1.b64_std
   })
 }
 
