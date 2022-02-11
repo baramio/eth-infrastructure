@@ -177,6 +177,13 @@
         replace: "CC_HOST={{ cc_host }}"
       become: yes
       become_user: beaconnode
+    - name: configure .env file - SUBDOMAIN
+      replace:
+        path: /home/beaconnode/eth/.env
+        regexp: 'DDNS_SUBDOMAIN='
+        replace: "DDNS_SUBDOMAIN={{ cc_host }}"
+      become: yes
+      become_user: beaconnode
     - name: configure .env file - LH_RAPID_SYNC
       replace:
         path: /home/beaconnode/eth/.env

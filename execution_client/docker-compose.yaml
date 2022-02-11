@@ -1,0 +1,123 @@
+version: "3.4"
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+
+services:
+  geth:
+    restart: unless-stopped
+    stop_grace_period: 3m
+    image: ethereum/client-go:stable
+    user: root
+    container_name: geth
+    volumes:
+      - geth-eth1-data:/var/lib/goethereum
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 30303:30303/tcp
+      - 30303:30303/udp
+    expose:
+      - 8545/tcp
+      - 8546/tcp
+      - 6060/tcp
+    networks:
+      - eth1
+    <<: *logging
+    entrypoint:
+      - geth
+      - --http
+      - --http.addr
+      - 0.0.0.0
+      - --http.vhosts=*
+      - --http.corsdomain=*
+      - --http.api
+      - web3,eth,net
+      - --datadir
+      - /var/lib/goethereum
+      - --port
+      - "30303"
+      - --http.port
+      - "8545"
+      - --ws
+      - --ws.addr
+      - 0.0.0.0
+      - --ws.origins=*
+      - --ws.port
+      - "8546"
+      - --ws.api
+      - web3,eth,net
+      - --${network}
+      - --metrics
+      - --metrics.expensive
+      - --pprof
+      - --pprof.addr
+      - 0.0.0.0
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ecws.service=ecws
+      - traefik.http.routers.ecws.entrypoints=websecure
+      - traefik.http.routers.ecws.rule=Host(`${ecws_host}.baramio-nodes.com`)
+      - traefik.http.routers.ecws.tls.certresolver=letsencrypt
+      - traefik.http.services.ecws.loadbalancer.server.port=8546
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - --log.level=DEBUG
+      - --accesslog=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=eth1
+      - --certificatesResolvers.letsencrypt.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.letsencrypt.acme.email=${cf_email}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=180
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers[0]=1.1.1.1:53
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers[1]=8.8.8.8:53
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+    ports:
+      - 443:443/tcp
+      - 80:80/tcp
+    environment:
+      - CLOUDFLARE_EMAIL=${cf_email}
+      - CLOUDFLARE_DNS_API_TOKEN=${cf_token}
+    networks:
+      - eth1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - certs:/letsencrypt
+      - /etc/localtime:/etc/localtime:ro
+    <<: *logging
+    depends_on:
+      - cf-ddns
+  cf-ddns:
+    image: oznu/cloudflare-ddns:latest
+    container_name: cf-ddns
+    restart: unless-stopped
+    environment:
+      - API_KEY=${cf_token}
+      - ZONE=baramio-nodes.com
+      - SUBDOMAIN=${ecws_host}
+      - PROXIED=false
+    networks:
+      - eth1
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    <<: *logging
+volumes:
+  geth-eth1-data:
+  certs:
+networks:
+  eth1:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv4: "true"

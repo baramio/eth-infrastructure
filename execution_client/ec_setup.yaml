@@ -1,0 +1,130 @@
+#cloud-config
+groups:
+  - ubuntu: [root,sys]
+  - docker
+
+# Add users to the system. Users are added after groups are added.
+users:
+  - default
+  - name: ec
+    gecos: ec
+    shell: /bin/bash
+    primary_group: docker
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    lock_passwd: false
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+write_files:
+  - path: /home/cert.json
+    content: |
+      {
+          "AccountTag"   : "${account}",
+          "TunnelID"     : "${tunnel_id}",
+          "TunnelName"   : "${tunnel_name}",
+          "TunnelSecret" : "${secret}"
+      }
+  - path: /home/config.yml
+    content: |
+      tunnel: ${tunnel_id}
+      credentials-file: /etc/cloudflared/cert.json
+      logfile: /var/log/cloudflared.log
+      loglevel: info
+      
+      ingress:
+        - hostname: "${network}-ec.baramio-nodes.com"
+          service: ws://geth:8546
+        - service: http_status:200
+  - path: /home/docker-compose.yaml
+    content: |
+      version: "3.4"
+      x-logging: &logging
+        logging:
+          driver: json-file
+          options:
+            max-size: 10m
+            max-file: "3"
+      
+      services:
+        geth:
+          restart: unless-stopped
+          stop_grace_period: 3m
+          image: ethereum/client-go:stable
+          user: root
+          container_name: geth
+          volumes:
+            - geth-eth1-data:/var/lib/goethereum
+            - /etc/localtime:/etc/localtime:ro
+          ports:
+            - 30303:30303/tcp
+            - 30303:30303/udp
+          expose:
+            - 8545/tcp
+            - 8546/tcp
+            - 6060/tcp
+          networks:
+            - eth1
+          <<: *logging
+          entrypoint:
+            - geth
+            - --http
+            - --http.addr
+            - 0.0.0.0
+            - --http.vhosts=*
+            - --http.corsdomain=*
+            - --http.api
+            - web3,eth,net
+            - --datadir
+            - /var/lib/goethereum
+            - --port
+            - "30303"
+            - --http.port
+            - "8545"
+            - --ws
+            - --ws.addr
+            - 0.0.0.0
+            - --ws.origins=*
+            - --ws.port
+            - "8546"
+            - --ws.api
+            - web3,eth,net
+            - --${network}
+            - --metrics
+            - --metrics.expensive
+            - --pprof
+            - --pprof.addr
+            - 0.0.0.0
+        cloudflared:
+          container_name: 'cloudflared'
+          image: 'cloudflare/cloudflared:2022.2.0'
+          volumes:
+            - '/home/ec/execution_client/cloudflared/:/etc/cloudflared/'
+          command: 'tunnel --config /etc/cloudflared/config.yml run'
+          user: root
+          restart: 'on-failure'
+          networks:
+            - eth1
+          <<: *logging
+      volumes:
+        geth-eth1-data:
+      networks:
+        eth1:
+          driver: bridge
+          driver_opts:
+            com.docker.network.enable_ipv4: "true"
+
+runcmd:
+  - sudo apt remove --purge --assume-yes snapd
+  - sudo apt update && sudo apt -y dist-upgrade
+  - sudo apt install -y docker-compose
+  - sudo systemctl enable --now docker
+  - sudo timedatectl set-ntp no
+  - sudo apt update && sudo apt install ntp -y
+  - mkdir /home/ec/execution_client
+  - mkdir /home/ec/execution_client/cloudflared
+  - mv /home/cert.json /home/ec/execution_client/cloudflared/cert.json
+  - mv /home/config.yml /home/ec/execution_client/cloudflared/config.yml
+  - mv /home/docker-compose.yaml /home/ec/execution_client/docker-compose.yaml
+  - chown ec:docker -R /home/ec
+  - cd /home/ec/execution_client && docker-compose up -d
