@@ -33,7 +33,7 @@ write_files:
       loglevel: debug
       
       ingress:
-        - hostname: "ec.baramio-nodes.com"
+        - hostname: "${network}-ec.baramio-nodes.com"
           service: ws://geth:8546
         - service: http_status:404
   - path: /home/docker-compose.yaml
@@ -95,16 +95,9 @@ write_files:
             - --pprof
             - --pprof.addr
             - 0.0.0.0
-          labels:
-            - traefik.enable=true
-            - traefik.http.routers.ecws.service=ecws
-            - traefik.http.routers.ecws.entrypoints=websecure
-            - traefik.http.routers.ecws.rule=Host(`${ecws_host}.baramio-nodes.com`)
-            - traefik.http.routers.ecws.tls.certresolver=letsencrypt
-            - traefik.http.services.ecws.loadbalancer.server.port=8546
         cloudflared:
-          container_name: 'cloudflared' # name obtained from environment variable
-          image: 'cloudflare/cloudflared:2022.2.0' # version obtained from environment variable
+          container_name: 'cloudflared'
+          image: 'cloudflare/cloudflared:2022.2.0'
           volumes:
             - '/home/ec/execution_client/cloudflared/:/etc/cloudflared/'
           command: 'tunnel --config /etc/cloudflared/config.yml run'
@@ -112,60 +105,9 @@ write_files:
           restart: 'on-failure'
           networks:
             - eth1
-        traefik:
-          image: traefik:latest
-          container_name: traefik
-          restart: unless-stopped
-          command:
-            - --log.level=DEBUG
-            - --accesslog=true
-            - --providers.docker=true
-            - --providers.docker.exposedbydefault=false
-            - --providers.docker.network=eth1
-            - --certificatesResolvers.letsencrypt.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
-            - --certificatesresolvers.letsencrypt.acme.dnschallenge=true
-            - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare
-            - --certificatesresolvers.letsencrypt.acme.email=${cf_email}
-            - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
-            - --certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=180
-            - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers[0]=1.1.1.1:53
-            - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers[1]=8.8.8.8:53
-            - --entrypoints.web.address=:80
-            - --entrypoints.web.http.redirections.entrypoint.to=websecure
-            - --entrypoints.web.http.redirections.entrypoint.scheme=https
-            - --entrypoints.websecure.address=:443
-          ports:
-            - 443:443/tcp
-            - 80:80/tcp
-          environment:
-            - CLOUDFLARE_EMAIL=${cf_email}
-            - CLOUDFLARE_DNS_API_TOKEN=${cf_token}
-          networks:
-            - eth1
-          volumes:
-            - /var/run/docker.sock:/var/run/docker.sock:ro
-            - certs:/letsencrypt
-            - /etc/localtime:/etc/localtime:ro
-          <<: *logging
-          depends_on:
-            - cf-ddns
-        cf-ddns:
-          image: oznu/cloudflare-ddns:latest
-          container_name: cf-ddns
-          restart: unless-stopped
-          environment:
-            - API_KEY=${cf_token}
-            - ZONE=baramio-nodes.com
-            - SUBDOMAIN=${ecws_host}
-            - PROXIED=false
-          networks:
-            - eth1
-          volumes:
-            - /etc/localtime:/etc/localtime:ro
           <<: *logging
       volumes:
         geth-eth1-data:
-        certs:
       networks:
         eth1:
           driver: bridge
@@ -186,39 +128,3 @@ runcmd:
   - mv /home/docker-compose.yaml /home/ec/execution_client/docker-compose.yaml
   - chown ec:docker -R /home/ec
   - cd /home/ec/execution_client && docker-compose up -d
-
-# https://github.com/cloudflare/argo-tunnel-examples/tree/master/terraform-zerotrust-ssh-http-gcp
-#
-#  - sudo apt update && sudo apt -y dist-upgrade
-#  - sudo apt install -y docker-compose
-#  - sudo systemctl enable --now docker
-#  - sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64
-#  - sudo chmod +x /usr/local/bin/yq
-#  - git clone https://github.com/eth-educators/eth-docker.git
-#  - mkdir /home/ec/eth-docker
-#  - mv /eth-docker/* /home/ec/eth-docker/
-#  - mv /eth-docker/.* /home/ec/eth-docker/
-#  - cp /home/ec/eth-docker/default.env /home/ec/eth-docker/.env
-#  - sed -i 's/COMPOSE_FILE=teku-base.yml:geth.yml/COMPOSE_FILE=geth.yml:ec-traefik.yml:traefik-cf.yml/g' /home/ec/eth-docker/.env
-#  - sed -i 's/EC_NETWORK=goerli/EC_NETWORK=${network}/g' /home/ec/eth-docker/.env
-#  - sed -i 's/DOMAIN=example.com/DOMAIN=baramio-nodes.com/g' /home/ec/eth-docker/.env
-#  - sed -i 's/DDNS_SUBDOMAIN=/DDNS_SUBDOMAIN=${ecws_host}/g' /home/ec/eth-docker/.env
-#  - sed -i 's/DDNS_PROXY=true/DDNS_PROXY=false/g' /home/ec/eth-docker/.env
-#  - sed -i 's/ACME_EMAIL=user@example.com/ACME_EMAIL=${cf_email}/g' /home/ec/eth-docker/.env
-#  - sed -i 's/CF_EMAIL=user@example.com/CF_EMAIL=${cf_email}/g' /home/ec/eth-docker/.env
-#  - sed -i 's/CF_API_TOKEN=SECRETTOKEN/CF_API_TOKEN=${cf_token}/g' /home/ec/eth-docker/.env
-#  - sed -i 's/EC_HOST=ec/EC_HOST=${ec_host}/g' /home/ec/eth-docker/.env
-#  - sed -i 's/EC_WS_HOST=ecws/EC_WS_HOST=${ecws_host}/g' /home/ec/eth-docker/.env
-#  - yq w -i /home/ec/eth-docker/geth.yml services.eth.image tianon/true
-#  - yq w -i /home/ec/eth-docker/geth.yml services.eth.restart --style=double no
-#  - yq w -i /home/ec/eth-docker/geth.yml 'services.execution.entrypoint[+]' ws.origins=*
-#  - sed -i 's/ws.origins/--ws.origins/g' /home/ec/eth-docker/geth.yml
-#  - yq w -i /home/ec/eth-docker/traefik-cf.yml 'services.traefik.command[+]' certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=86400
-#  - sed -i 's/certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck/--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck/g' /home/ec/eth-docker/traefik-cf.yml
-#  - chown ec:docker -R /home/ec/eth-docker
-#  - sudo timedatectl set-ntp no
-#  - sudo apt update && sudo apt install ntp -y
-#  - cd /home/ec/eth-docker && docker-compose build --pull
-#  - cd /home/ec/eth-docker && ./ethd start
-
-# https://stackoverflow.com/questions/58252621/traefik-http-https-ws-wss-on-same-domain-docker-swarm
