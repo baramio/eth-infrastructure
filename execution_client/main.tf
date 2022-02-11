@@ -31,28 +31,18 @@ variable "network" {
 }
 
 variable "ec1_name" {
-  default     = "1-ec"
+  default     = "aequilo"
   description = "name of the first node"
 }
 
 variable "ec2_name" {
-  default     = "2-ec"
+  default     = "boreas"
   description = "name of the second node"
 }
 
 variable "cf_email" {
   default     = "me@baramio-nodes.com"
   description = "cloudflare email"
-}
-
-variable "cf_token" {
-  default     = "wassup"
-  description = "cloudflare token"
-}
-
-variable "cf_lb_token" {
-  default     = "hey"
-  description = "cloudflare token for load balancing"
 }
 
 variable "cf_tunnel_token" {
