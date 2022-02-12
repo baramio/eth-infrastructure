@@ -159,7 +159,7 @@ resource "digitalocean_droplet" "execution_client_2" {
 
 resource "digitalocean_volume" "volume2" {
   region                  = var.region2
-  name                    = "${var.network}-${var.ec2_name}"
+  name                    = "${var.network}-${var.ec2_name}-vol"
   size                    = 200
   initial_filesystem_type = "ext4"
   description             = "volume for ${var.network}-${var.ec2_name}"
