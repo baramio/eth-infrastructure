@@ -122,13 +122,13 @@ resource "digitalocean_droplet" "execution_client_1" {
     tunnel_id      = cloudflare_argo_tunnel.auto_tunnel1.id,
     tunnel_name    = cloudflare_argo_tunnel.auto_tunnel1.name,
     secret         = random_id.tunnel_secret1.b64_std,
-    volume_name    = "${var.network}-${var.ec1_name}-vol"
+    volume_name    = "${var.network}_${var.ec1_name}_vol"
   })
 }
 
 resource "digitalocean_volume" "volume1" {
   region                  = var.region1
-  name                    = "${var.network}-${var.ec1_name}-vol"
+  name                    = "${var.network}_${var.ec1_name}_vol"
   size                    = 200
   initial_filesystem_type = "ext4"
   description             = "volume for ${var.network}-${var.ec1_name}"
@@ -153,13 +153,13 @@ resource "digitalocean_droplet" "execution_client_2" {
     tunnel_id      = cloudflare_argo_tunnel.auto_tunnel2.id,
     tunnel_name    = cloudflare_argo_tunnel.auto_tunnel2.name,
     secret         = random_id.tunnel_secret2.b64_std,
-    volume_name    = "${var.network}-${var.ec2_name}-vol"
+    volume_name    = "${var.network}_${var.ec2_name}_vol"
   })
 }
 
 resource "digitalocean_volume" "volume2" {
   region                  = var.region2
-  name                    = "${var.network}-${var.ec2_name}-vol"
+  name                    = "${var.network}_${var.ec2_name}_vol"
   size                    = 200
   initial_filesystem_type = "ext4"
   description             = "volume for ${var.network}-${var.ec2_name}"
