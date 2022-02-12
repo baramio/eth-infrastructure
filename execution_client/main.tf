@@ -61,13 +61,13 @@ variable "ec2_name" {
 }
 
 variable "region1" {
-  default     = 'nyc1'
-  description = 'region 1'
+  default     = "nyc1"
+  description = "region 1"
 }
 
 variable "region2" {
-  default     = 'sfo3'
-  description = 'region 2'
+  default     = "sfo3"
+  description = "region 2"
 }
 
 variable "instance_size_1" {
