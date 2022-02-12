@@ -30,16 +30,6 @@ variable "network" {
   description = "network the geth node should be running on"
 }
 
-variable "ec1_name" {
-  default     = "aeolus"
-  description = "name of the first node"
-}
-
-variable "ec2_name" {
-  default     = "boreas"
-  description = "name of the second node"
-}
-
 variable "cf_email" {
   default     = "me@baramio-nodes.com"
   description = "cloudflare email"
@@ -58,6 +48,36 @@ variable "cf_zoneid" {
 variable "cf_acctid" {
   default     = "acct id"
   description = "cloudflare account id"
+}
+
+variable "ec1_name" {
+  default     = "aeolus"
+  description = "name of the first node"
+}
+
+variable "ec2_name" {
+  default     = "boreas"
+  description = "name of the second node"
+}
+
+variable "region1" {
+  default     = "nyc1"
+  description = "region 1"
+}
+
+variable "region2" {
+  default     = "sfo3"
+  description = "region 2"
+}
+
+variable "instance_size_1" {
+  default     = "s-4vcpu-8gb"
+  description = "instance size"
+}
+
+variable "instance_size_2" {
+  default     = "s-4vcpu-8gb"
+  description = "instance size"
 }
 
 provider "digitalocean" {}
@@ -91,8 +111,8 @@ resource "cloudflare_argo_tunnel" "auto_tunnel2" {
 resource "digitalocean_droplet" "execution_client_1" {
   image      = "ubuntu-20-04-x64"
   name       = "${var.network}-${var.ec1_name}"
-  region     = "nyc1"
-  size       = "s-4vcpu-8gb"
+  region     = var.region1
+  size       = var.instance_size_1
   tags       = ["geth"]
   monitoring = true
   user_data  = templatefile("ec_setup.yaml", {
@@ -101,15 +121,29 @@ resource "digitalocean_droplet" "execution_client_1" {
     account        = var.cf_acctid,
     tunnel_id      = cloudflare_argo_tunnel.auto_tunnel1.id,
     tunnel_name    = cloudflare_argo_tunnel.auto_tunnel1.name,
-    secret         = random_id.tunnel_secret1.b64_std
+    secret         = random_id.tunnel_secret1.b64_std,
+    volume_name    = "${var.network}${var.ec1_name}vol"
   })
+}
+
+resource "digitalocean_volume" "volume1" {
+  region                  = var.region1
+  name                    = "${var.network}${var.ec1_name}vol"
+  size                    = 200
+  initial_filesystem_type = "ext4"
+  description             = "volume for ${var.network}-${var.ec1_name}"
+}
+
+resource "digitalocean_volume_attachment" "vol_attach_1" {
+  droplet_id = digitalocean_droplet.execution_client_1.id
+  volume_id  = digitalocean_volume.volume1.id
 }
 
 resource "digitalocean_droplet" "execution_client_2" {
   image      = "ubuntu-20-04-x64"
   name       = "${var.network}-${var.ec2_name}"
-  region     = "sfo3"
-  size       = "s-4vcpu-8gb"
+  region     = var.region2
+  size       = var.instance_size_2
   tags       = ["geth"]
   monitoring = true
   user_data  = templatefile("ec_setup.yaml", {
@@ -118,8 +152,22 @@ resource "digitalocean_droplet" "execution_client_2" {
     account        = var.cf_acctid,
     tunnel_id      = cloudflare_argo_tunnel.auto_tunnel2.id,
     tunnel_name    = cloudflare_argo_tunnel.auto_tunnel2.name,
-    secret         = random_id.tunnel_secret2.b64_std
+    secret         = random_id.tunnel_secret2.b64_std,
+    volume_name    = "${var.network}${var.ec2_name}vol"
   })
+}
+
+resource "digitalocean_volume" "volume2" {
+  region                  = var.region2
+  name                    = "${var.network}${var.ec2_name}vol"
+  size                    = 200
+  initial_filesystem_type = "ext4"
+  description             = "volume for ${var.network}-${var.ec2_name}"
+}
+
+resource "digitalocean_volume_attachment" "vol_attach_2" {
+  droplet_id = digitalocean_droplet.execution_client_2.id
+  volume_id  = digitalocean_volume.volume2.id
 }
 
 resource "cloudflare_load_balancer" "loadbalancer" {
