@@ -59,9 +59,11 @@ write_files:
           ports:
             - 30303:30303/tcp
             - 30303:30303/udp
+            - 8545:8545/tcp
+            - 8546:8546/tcp
           expose:
-            - 8545/tcp
-            - 8546/tcp
+            # - 8545/tcp
+            # - 8546/tcp
             - 6060/tcp
           networks:
             - eth1
@@ -96,13 +98,13 @@ write_files:
             - --pprof.addr
             - 0.0.0.0
         cloudflared:
-          container_name: 'cloudflared'
-          image: 'cloudflare/cloudflared:2022.2.0'
+          container_name: cloudflared
+          image: cloudflare/cloudflared:2022.2.0
           volumes:
-            - '/home/ec/execution_client/cloudflared/:/etc/cloudflared/'
+            - /home/ec/execution_client/cloudflared/:/etc/cloudflared/
           command: 'tunnel --config /etc/cloudflared/config.yml run'
           user: root
-          restart: 'on-failure'
+          restart: unless-stopped
           networks:
             - eth1
           <<: *logging
@@ -125,4 +127,7 @@ runcmd:
   - mv /home/config.yml /home/ec/execution_client/cloudflared/config.yml
   - mv /home/docker-compose.yaml /home/ec/execution_client/docker-compose.yaml
   - chown ec:docker -R /home/ec
+  - mkdir -p /mnt/${volume_name}
+  - mount -o discard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_${volume_name} /mnt/${volume_name}
+  - echo '/dev/disk/by-id/scsi-0DO_Volume_${volume_name} /mnt/${volume_name} ext4 defaults,nofail,discard 0 0' | sudo tee -a /etc/fstab
   - cd /home/ec/execution_client && docker-compose up -d
