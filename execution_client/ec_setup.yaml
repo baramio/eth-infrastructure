@@ -33,8 +33,10 @@ write_files:
       loglevel: info
       
       ingress:
-        - hostname: "${network}-ec.baramio-nodes.com"
+        - hostname: "${network}-ec-ws.baramio-nodes.com"
           service: ws://geth:8546
+        - hostname: "${network}-ec-rpc.baramio-nodes.com"
+          service: http://geth:8545
         - service: http_status:200
   - path: /home/docker-compose.yaml
     content: |
