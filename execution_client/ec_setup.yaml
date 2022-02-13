@@ -127,4 +127,7 @@ runcmd:
   - mv /home/config.yml /home/ec/execution_client/cloudflared/config.yml
   - mv /home/docker-compose.yaml /home/ec/execution_client/docker-compose.yaml
   - chown ec:docker -R /home/ec
+  - mkdir -p /mnt/${volume_name}
+  - mount -o discard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_${volume_name} /mnt/${volume_name}
+  - echo '/dev/disk/by-id/scsi-0DO_Volume_${volume_name} /mnt/${volume_name} ext4 defaults,nofail,discard 0 0' | sudo tee -a /etc/fstab
   - cd /home/ec/execution_client && docker-compose up -d
