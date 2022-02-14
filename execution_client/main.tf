@@ -213,3 +213,19 @@ resource "cloudflare_load_balancer_pool" "pool2" {
   monitor = cloudflare_load_balancer_monitor.http_monitor.id
   notification_email = "joseph@baramio.com"
 }
+
+resource "cloudflare_record" "rpc" {
+  zone_id = var.cf_zoneid
+  name    = "${var.network}-ec-rpc"
+  value   = "${var.network}-ec.baramio-nodes.com"
+  type    = "CNAME"
+  proxied = true
+}
+
+resource "cloudflare_record" "ws" {
+  zone_id = var.cf_zoneid
+  name    = "${var.network}-ec-ws"
+  value   = "${var.network}-ec.baramio-nodes.com"
+  type    = "CNAME"
+  proxied = true
+}

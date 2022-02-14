@@ -33,8 +33,10 @@ write_files:
       loglevel: info
       
       ingress:
-        - hostname: "${network}-ec.baramio-nodes.com"
+        - hostname: "${network}-ec-ws.baramio-nodes.com"
           service: ws://geth:8546
+        - hostname: "${network}-ec-rpc.baramio-nodes.com"
+          service: http://geth:8545
         - service: http_status:200
   - path: /home/docker-compose.yaml
     content: |
@@ -59,11 +61,9 @@ write_files:
           ports:
             - 30303:30303/tcp
             - 30303:30303/udp
-            - 8545:8545/tcp
-            - 8546:8546/tcp
           expose:
-            # - 8545/tcp
-            # - 8546/tcp
+            - 8545/tcp
+            - 8546/tcp
             - 6060/tcp
           networks:
             - eth1
