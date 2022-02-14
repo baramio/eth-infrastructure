@@ -40,7 +40,7 @@ write_files:
         - hostname: "${network}-ec-rpc.baramio-nodes.com"
           service: http://geth:8545
         # for healthcheck monitoring by the load balancer
-        - hostname: "${network}-ec.baramio-nodes.com"
+        - hostname: "${tunnel_id}"
           service: http://geth:8545
         # everything else is invalid
         - service: http_status:404
