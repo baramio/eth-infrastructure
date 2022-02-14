@@ -189,8 +189,8 @@ resource "cloudflare_load_balancer_monitor" "http_monitor" {
   retries = 2
   description = "http load balancer"
   header {
-    header: "Content-Type"
-    values: ["application/json"]
+    header = "Content-Type"
+    values = ["application/json"]
   }
 }
 
