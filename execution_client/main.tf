@@ -188,6 +188,10 @@ resource "cloudflare_load_balancer_monitor" "http_monitor" {
   interval = 60
   retries = 2
   description = "http load balancer"
+  header {
+    header = "Content-Type"
+    values = ["application/json"]
+  }
 }
 
 resource "cloudflare_load_balancer_pool" "pool1" {
