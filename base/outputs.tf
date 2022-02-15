@@ -16,7 +16,6 @@ output "tunnel1_name" {
 
 output "tunnel1_token" {
   value     = random_id.tunnel_secret1.b64_std
-  sensitive = true
 }
 
 output "ig_2_private_ip" {
@@ -37,5 +36,4 @@ output "tunnel2_name" {
 
 output "tunnel2_token" {
   value     = random_id.tunnel_secret2.b64_std
-  sensitive = true
 }
