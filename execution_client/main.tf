@@ -10,10 +10,6 @@ terraform {
       source = "cloudflare/cloudflare"
       version = "~> 3.0"
     }
-    random = {
-      source = "hashicorp/random"
-      version = ">= 0.13"
-    }
     template = {
       source = "hashicorp/template"
       version = ">= 0.13"
@@ -21,91 +17,45 @@ terraform {
   }
 }
 
-variable "ssh_public_key" {
-  default     = 1
-  description = "ssh public key to access droplets"
-}
-variable "network" {
-  default     = "goerli"
-  description = "network the geth node should be running on"
-}
-
-variable "cf_email" {
-  default     = "me@baramio-nodes.com"
-  description = "cloudflare email"
-}
-
-variable "cf_tunnel_token" {
-  default     = "hey"
-  description = "cloudflare token for tunneling and load balancing"
-}
-
-variable "cf_zoneid" {
-  default     = "zone zone zone"
-  description = "cloudflare zone id"
-}
-
-variable "cf_acctid" {
-  default     = "acct id"
-  description = "cloudflare account id"
-}
-
+variable "ssh_public_key" {}
+variable "network" {}
+variable "cf_email" {}
+variable "cf_tunnel_token" {}
+variable "cf_zoneid" {}
+variable "cf_acctid" {}
+variable "instance_size_1" {}
+variable "instance_size_2" {}
+variable "cf_tunnel1_id" {}
+variable "cf_tunnel1_name" {}
+variable "cf_tunnel1_token" {}
+variable "ig1_private_ip" {}
+variable "vpc1_uuid" {}
+variable "cf_tunnel2_id" {}
+variable "cf_tunnel2_name" {}
+variable "cf_tunnel2_token" {}
+variable "ig2_private_ip" {}
+variable "vpc2_uuid" {}
 variable "ec1_name" {
   default     = "aeolus"
   description = "name of the first node"
 }
-
 variable "ec2_name" {
   default     = "boreas"
   description = "name of the second node"
 }
-
 variable "region1" {
   default     = "nyc1"
   description = "region 1"
 }
-
 variable "region2" {
   default     = "sfo3"
   description = "region 2"
 }
 
-variable "instance_size_1" {
-  default     = "s-4vcpu-8gb"
-  description = "instance size"
-}
-
-variable "instance_size_2" {
-  default     = "s-4vcpu-8gb"
-  description = "instance size"
-}
-
 provider "digitalocean" {}
 provider "cloudflare" {
-  email   = var.cf_email
+  email     = var.cf_email
   api_token = var.cf_tunnel_token
-}
-provider "random" {}
-
-# The random_id resource is used to generate a 35 character secret for the tunnel
-resource "random_id" "tunnel_secret1" {
-  byte_length = 35
-}
-# The random_id resource is used to generate a 35 character secret for the tunnel
-resource "random_id" "tunnel_secret2" {
-  byte_length = 35
-}
-# A Named Tunnel resource called zero_trust_ssh_http
-resource "cloudflare_argo_tunnel" "auto_tunnel1" {
-  account_id = var.cf_acctid
-  name       = "${var.network}-${var.ec1_name}-tunnel"
-  secret     = random_id.tunnel_secret1.b64_std
-}
-# A Named Tunnel resource called zero_trust_ssh_http
-resource "cloudflare_argo_tunnel" "auto_tunnel2" {
-  account_id = var.cf_acctid
-  name       = "${var.network}-${var.ec2_name}-tunnel"
-  secret     = random_id.tunnel_secret2.b64_std
 }
 
 resource "digitalocean_droplet" "execution_client_1" {
@@ -115,14 +65,16 @@ resource "digitalocean_droplet" "execution_client_1" {
   size       = var.instance_size_1
   tags       = ["geth"]
   monitoring = true
+  vpc_uuid   = var.vpc1_uuid
   user_data  = templatefile("ec_setup.yaml", {
-    ssh_public_key = var.ssh_public_key,
-    network        = var.network,
-    account        = var.cf_acctid,
-    tunnel_id      = cloudflare_argo_tunnel.auto_tunnel1.id,
-    tunnel_name    = cloudflare_argo_tunnel.auto_tunnel1.name,
-    secret         = random_id.tunnel_secret1.b64_std,
-    volume_name    = "${var.network}${var.ec1_name}vol"
+    ssh_public_key     = var.ssh_public_key,
+    network            = var.network,
+    account            = var.cf_acctid,
+    tunnel_id          = var.cf_tunnel1_id,
+    tunnel_name        = var.cf_tunnel1_name,
+    secret             = var.cf_tunnel1_token,
+    gateway_private_ip = var.ig1_private_ip,
+    volume_name        = "${var.network}${var.ec1_name}vol"
   })
 }
 
@@ -146,14 +98,16 @@ resource "digitalocean_droplet" "execution_client_2" {
   size       = var.instance_size_2
   tags       = ["geth"]
   monitoring = true
+  vpc_uuid   = var.vpc2_uuid
   user_data  = templatefile("ec_setup.yaml", {
-    ssh_public_key = var.ssh_public_key,
-    network        = var.network,
-    account        = var.cf_acctid,
-    tunnel_id      = cloudflare_argo_tunnel.auto_tunnel2.id,
-    tunnel_name    = cloudflare_argo_tunnel.auto_tunnel2.name,
-    secret         = random_id.tunnel_secret2.b64_std,
-    volume_name    = "${var.network}${var.ec2_name}vol"
+    ssh_public_key     = var.ssh_public_key,
+    network            = var.network,
+    account            = var.cf_acctid,
+    tunnel_id          = var.cf_tunnel2_id,
+    tunnel_name        = var.cf_tunnel2_name,
+    secret             = var.cf_tunnel2_token,
+    gateway_private_ip = var.ig2_private_ip,
+    volume_name        = "${var.network}${var.ec2_name}vol"
   })
 }
 
@@ -180,14 +134,14 @@ resource "cloudflare_load_balancer" "loadbalancer" {
 }
 
 resource "cloudflare_load_balancer_monitor" "http_monitor" {
-  type = "http"
+  type           = "http"
   expected_codes = "200"
-  method = "GET"
-  timeout = 5
-  path = "/"
-  interval = 60
-  retries = 2
-  description = "http load balancer"
+  method         = "GET"
+  timeout        = 5
+  path           = "/"
+  interval       = 60
+  retries        = 2
+  description    = "http load balancer"
   header {
     header = "Content-Type"
     values = ["application/json"]
@@ -198,11 +152,11 @@ resource "cloudflare_load_balancer_pool" "pool1" {
   name = "${var.network}-lb-pool-1"
   origins {
     name    = "${var.network}-ec-1"
-    address = "${cloudflare_argo_tunnel.auto_tunnel1.id}.cfargotunnel.com"
+    address = "${var.cf_tunnel1_id}.cfargotunnel.com"
     enabled = true
   }
-  minimum_origins = 1
-  monitor = cloudflare_load_balancer_monitor.http_monitor.id
+  minimum_origins    = 1
+  monitor            = cloudflare_load_balancer_monitor.http_monitor.id
   notification_email = "joseph@baramio.com"
 }
 
@@ -210,11 +164,11 @@ resource "cloudflare_load_balancer_pool" "pool2" {
   name = "${var.network}-lb-pool-2"
   origins {
     name    = "${var.network}-ec-2"
-    address = "${cloudflare_argo_tunnel.auto_tunnel2.id}.cfargotunnel.com"
+    address = "${var.cf_tunnel2_id}.cfargotunnel.com"
     enabled = true
   }
-  minimum_origins = 1
-  monitor = cloudflare_load_balancer_monitor.http_monitor.id
+  minimum_origins    = 1
+  monitor            = cloudflare_load_balancer_monitor.http_monitor.id
   notification_email = "joseph@baramio.com"
 }
 
