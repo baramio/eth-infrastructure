@@ -23,10 +23,6 @@ variable "cf_email" {}
 variable "cf_tunnel_token" {}
 variable "cf_zoneid" {}
 variable "cf_acctid" {}
-variable "ec1_name" {}
-variable "ec2_name" {}
-variable "region1" {}
-variable "region2" {}
 variable "instance_size_1" {}
 variable "instance_size_2" {}
 variable "cf_tunnel1_id" {}
@@ -39,6 +35,22 @@ variable "cf_tunnel2_name" {}
 variable "cf_tunnel2_token" {}
 variable "ig2_private_ip" {}
 variable "vpc2_uuid" {}
+variable "ec1_name" {
+  default     = "aeolus"
+  description = "name of the first node"
+}
+variable "ec2_name" {
+  default     = "boreas"
+  description = "name of the second node"
+}
+variable "region1" {
+  default     = "nyc1"
+  description = "region 1"
+}
+variable "region2" {
+  default     = "sfo3"
+  description = "region 2"
+}
 
 provider "digitalocean" {}
 provider "cloudflare" {
