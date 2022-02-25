@@ -16,7 +16,9 @@ terraform {
 }
 
 variable "network" {}
-
+variable "checkpoint_sync" {
+  sensitive = true
+}
 provider "kubernetes" {
   config_path    = "baramio-kubeconfig.yaml"
 }
@@ -64,7 +66,22 @@ resource "kubernetes_stateful_set" "cc-node" {
             container_port = 5054
             name = "metrics"
           }
-          args = ["lighthouse", "beacon", "--datadir", "/opt/cc/data", "--http", "--http-address", "0.0.0.0", "--network", var.network, "--metrics", "--metrics-address", "0.0.0.0"]
+          args = [
+            "lighthouse",
+            "beacon",
+            "--datadir",
+            "/opt/cc/data",
+            "--http",
+            "--http-address",
+            "0.0.0.0",
+            "--network",
+            var.network,
+            "--metrics",
+            "--metrics-address",
+            "0.0.0.0",
+            "--checkpoint-sync-url",
+            var.checkpoint_sync
+          ]
           volume_mount {
             name        = "cc-data"
             mount_path  = "/opt/cc/data"
