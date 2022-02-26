@@ -27,15 +27,16 @@ resource "cloudflare_argo_tunnel" "tunnel" {
 
 resource "cloudflare_record" "record" {
   zone_id = var.cf_zoneid
-  name    = "cc-${var.network}"
+  name    = "${var.network}-cc"
   value   = "${cloudflare_argo_tunnel.tunnel.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
+  depends_on = [cloudflare_argo_tunnel.tunnel]
 }
 
 resource "kubernetes_secret" "cloudflared-creds" {
   metadata {
-    name      = "cc-creds"
+    name      = "cloudflared-creds"
     namespace = "cc"
   }
   data = {
@@ -48,6 +49,7 @@ resource "kubernetes_secret" "cloudflared-creds" {
 }
     EOF
   }
+  depends_on = [kubernetes_namespace.consensus_client, cloudflare_argo_tunnel.tunnel]
 }
 
 resource "kubernetes_config_map" "cloudflared-config" {
@@ -70,6 +72,7 @@ ingress:
   - service: http_status:404
     EOF
   }
+  depends_on = [kubernetes_namespace.consensus_client, cloudflare_argo_tunnel.tunnel]
 }
 
 resource "kubernetes_deployment" "cloudflared" {
@@ -133,4 +136,5 @@ resource "kubernetes_deployment" "cloudflared" {
       }
     }
   }
+  depends_on = [kubernetes_config_map.cloudflared-config, kubernetes_secret.cloudflared-creds]
 }

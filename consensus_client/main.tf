@@ -16,6 +16,9 @@ terraform {
 }
 
 variable "network" {}
+variable "eth1_endpoint" {
+  sensitive = true
+}
 variable "checkpoint_sync" {
   sensitive = true
 }
@@ -154,14 +157,14 @@ resource "kubernetes_service" "cc_peers_service" {
       protocol = "TCP"
       target_port = "9000"
       name = "tcp"
-      node_port = "33900"
+      node_port = "30933"
     }
     port {
       port = "9000"
       protocol = "UDP"
       target_port = "9000"
       name = "udp"
-      node_port = "33900"
+      node_port = "30933"
     }
   }
 }

@@ -1,1 +1,2 @@
 consensus_client/terraform.tfvars
+consensus_client/baramio-kubeconfig.yaml
