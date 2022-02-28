@@ -1,2 +1,2 @@
-consensus_client/group_vars/tokens
-/ssv/group_vars/tokens
+consensus_client/terraform.tfvars
+consensus_client/baramio-kubeconfig.yaml
