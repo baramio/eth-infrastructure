@@ -84,7 +84,7 @@ resource "kubernetes_deployment" "cloudflared" {
     }
   }
   spec {
-    replicas = 1
+    replicas = 2
     selector {
       match_labels = {
         app = "cloudflared"
@@ -98,7 +98,7 @@ resource "kubernetes_deployment" "cloudflared" {
       }
       spec {
         container {
-          image = "cloudflare/cloudflared:2022.2.0"
+          image = "cloudflare/cloudflared:2022.3.0"
           name  = "cloudflared"
           args  = ["tunnel", "--config", "/etc/cloudflared/config.yaml",  "run"]
           volume_mount {

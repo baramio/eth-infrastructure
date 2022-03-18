@@ -105,9 +105,20 @@ write_files:
             - --pprof
             - --pprof.addr
             - 0.0.0.0
-        cloudflared:
-          container_name: cloudflared
-          image: cloudflare/cloudflared:2022.2.0
+        cloudflared1:
+          container_name: cloudflared1
+          image: cloudflare/cloudflared:2022.3.0
+          volumes:
+            - /home/ec/execution_client/cloudflared/:/etc/cloudflared/
+          command: 'tunnel --config /etc/cloudflared/config.yml run'
+          user: root
+          restart: unless-stopped
+          networks:
+            - eth1
+          <<: *logging
+        cloudflared2:
+          container_name: cloudflared2
+          image: cloudflare/cloudflared:2022.3.0
           volumes:
             - /home/ec/execution_client/cloudflared/:/etc/cloudflared/
           command: 'tunnel --config /etc/cloudflared/config.yml run'
