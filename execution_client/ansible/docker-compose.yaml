@@ -1,0 +1,111 @@
+version: "3.4"
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+
+services:
+  geth:
+    restart: unless-stopped
+    stop_grace_period: 3m
+    image: ethereum/client-go:stable
+    user: root
+    container_name: geth
+    volumes:
+      - /home/eth/ec/${NETWORK}:/var/lib/goethereum
+      - /etc/localtime:/etc/localtime:ro
+      - /home/eth/jwt:/jwt
+    ports:
+      - 30303:30303/tcp
+      - 30303:30303/udp
+      - 8551:8551/tcp
+    expose:
+      - 8545/tcp
+      - 8546/tcp
+      - 8551/tcp
+      - 6060/tcp
+    networks:
+      - ${NETWORK}-network
+    <<: *logging
+    entrypoint:
+      - geth
+      - --http
+      - --http.addr
+      - 0.0.0.0
+      - --http.vhosts=*
+      - --http.corsdomain=*
+      - --http.api
+      - web3,eth,net
+      - --datadir
+      - /var/lib/goethereum
+      - --port
+      - "30303"
+      - --http.port
+      - "8545"
+      - --ws
+      - --ws.addr
+      - 0.0.0.0
+      - --ws.origins=*
+      - --ws.port
+      - "8546"
+      - --ws.api
+      - web3,eth,net
+      - --${NETWORK}
+      - --authrpc.addr=geth
+      - --authrpc.port=8551
+      - --authrpc.vhosts=*
+      - --authrpc.jwtsecret
+      - "/jwt/jwtsecret"
+      - --metrics
+      - --metrics.expensive
+      - --rpc.txfeecap=0
+      - --rpc.gascap=0
+      - --pprof
+      - --pprof.addr
+      - 0.0.0.0
+  lighthouse:
+    restart: unless-stopped
+    stop_grace_period: 3m
+    image: sigp/lighthouse:latest
+    user: root
+    container_name: lighthouse
+    volumes:
+      - /home/eth/cc/${NETWORK}:/var/lib/lighthouse
+      - /etc/localtime:/etc/localtime:ro
+      - /home/eth/jwt:/jwt
+    ports:
+      - 9000:9000/tcp
+      - 9000:9000/udp
+    expose:
+      - 5052/tcp
+      - 5054/tcp
+      - 9000/tcp
+    networks:
+      - ${NETWORK}-network
+    <<: *logging
+    entrypoint:
+      - "lighthouse"
+      - "beacon"
+      - "--datadir"
+      - "/var/lib/lighthouse/data"
+      - "--http"
+      - "--http-address"
+      - "0.0.0.0"
+      - "--network"
+      - ${NETWORK}
+      - "--metrics"
+      - "--metrics-address"
+      - "0.0.0.0"
+      #- "--checkpoint-sync-url"
+      #- ${checkpoint_sync}
+      - --execution-endpoint
+      - "http://geth:8551"
+      - --execution-jwt
+      - "/jwt/jwtsecret"
+networks:
+  ${NETWORK}-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv4: "true"

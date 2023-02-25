@@ -38,9 +38,8 @@ sudo ufw default reject outgoing
 sudo ufw status verbose
 
 
-mkdir /home/eth/rinkeby
-mkdir /home/eth/goerli
-mkdir /home/eth/prater
-docker network create -d bridge rinkeby-network
+mkdir /home/eth/ec
+mkdir /home/eth/cc
+mkdir /home/eth/ec/goerli
+mkdir /home/eth/cc/goerli
 docker network create -d bridge goerli-network
-docker network create -d bridge prater-network
